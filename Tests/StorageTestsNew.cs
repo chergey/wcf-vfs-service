@@ -37,28 +37,90 @@ namespace Emroy.Vfs.Tests
         public void TestCreateDirectoryAndFileInItUsingPath()
         {
 
-            var directory = _root.CreateSubDirectory("dir1");
-            directory.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
 
             _root.CreateFile("dir1/file22.txt", VfsFileMode.CreateNew);
-            _root.CreateSubDirectory("dir1/dir2");
-            Assert.IsTrue(directory.Contains("file22.txt"));
 
-            Assert.IsTrue(directory.Contains("file22.txt"));
-            Assert.IsTrue(directory.Contains("dir2"));
+            var dir2 = _root.CreateSubDirectory("dir1/dir2");
+            _root.CreateFile("dir1/dir2/file3.txt", VfsFileMode.CreateNew);
+            Assert.IsTrue(dir1.Contains("file22.txt"));
+
+            Assert.IsTrue(dir1.Contains("file22.txt"));
+            Assert.IsTrue(dir1.Contains("dir2"), "dir1 does not contain dir2");
+
+            Assert.IsTrue(dir2.Contains("file3.txt"), "dir2 does not contain file3");
         }
         [TestMethod]
         public void TestCopyDirectory()
         {
-            var directory = _root.CreateSubDirectory("dir1");
-            directory.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+
+            _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
 
             _root.CreateFile("dir1/file22.txt", VfsFileMode.CreateNew);
-            _root.CreateSubDirectory("dir1/dir2");
-            directory.Contains("file22.txt");
 
-            _root.CreateSubDirectory("dir11");
-            _root.CopyEntity("dir1", "dir11");
+            _root.CreateSubDirectory("dir1/dir2");
+            Assert.IsTrue(dir1.Contains("file22.txt"));
+
+
+            var dir11 = _root.CreateSubDirectory("dir11");
+            var dir23 = dir11.CreateSubDirectory("dir23");
+            var dir12 = _root.CreateSubDirectory("dir12");
+
+            dir12.CreateSubDirectory("dir22");
+            _root.CreateFile("dir12/dir22/file31.txt", VfsFileMode.CreateNew);
+            _root.CopyEntity("dir1", "dir11/dir23");
+
+
+
+            Assert.IsTrue(dir23.Contains("dir1"));
+            Assert.IsTrue(dir23.Parent.Name == "dir11");
+
+
+            // _root.CopyEntity("dir1/file22.txt", "dir12/dir22/file31.txt");
+            //  _root.CopyEntity("dir1/file22.txt", "dir12/dir22/file22.txt");
+
+        }
+
+        [TestMethod]
+        public void TestLock()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+
+            var file1 = _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
+
+
+            file1.LockFile("Antonio");
+            file1.UnLockFile("Antonio");
+            _root.DeleteFile("file1.txt");
+
+        }
+
+
+        [TestMethod]
+        public void TestMove()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+
+            var file1 = _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
+            _root.MoveEntity("file123456.txt", "dir1");
+            Assert.IsFalse(_root.Contains("file123456.txt"));
 
         }
 

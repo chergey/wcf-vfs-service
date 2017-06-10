@@ -38,7 +38,7 @@ namespace Emroy.Vfs.Service
         /// </summary>
         public static Directory Root =>  Directory.Root;
 
-
+        /*
         /// <summary>
         /// Get directories structure in the form:
         /// /
@@ -58,7 +58,7 @@ namespace Emroy.Vfs.Service
             + (s.Value.Any() ? " [Locked by " + string.Join(",", s.Value.Select(f => f == curUserName ? "Me" : f)) + "]" : "") + "\n");
             return strList;
         }
-
+        
         public IDictionary<string, IEnumerable<string>> GetRecursiveDirs(string path = Separator)
         {
             var dirNames = new Dictionary<string, IEnumerable<string>> { [path] = { } }
@@ -67,7 +67,7 @@ namespace Emroy.Vfs.Service
             return dirNames;
 
         }
-
+        */
         public static bool IsRootedDir(string path)
         {
             return path.EndsWith(Separator) && path.Length > 1;
@@ -103,131 +103,131 @@ namespace Emroy.Vfs.Service
         }
         */
 
-
-        private IDictionary<string, IEnumerable<string>> GetRecursiveDirsInternal(string path = Separator)
-        {
-            var dir = new Directory( path);
-            var list = dir.GetDirectoryContents();
-            var dirNames = new Dictionary<string, IEnumerable<string>>();
-            foreach (var a in list)
-            {
-                var locks = new List<string>(); //a.Locks.Where(f => f.Value).Select(f => f.Key);
-                if (a is VfsFile)
-                    locks.AddRange(((VfsFile) a).Locks);
-
-             //   dirNames.Add(a.Path, locks);
-                if (a is Directory)
-                {
-                    //var childDirs = GetRecursiveDirsInternal(a.Path);
-                //    dirNames = dirNames.Union(childDirs).ToDictionary(k => k.Key, v => v.Value);
-
-                }
-            }
-            return dirNames;
-
-        }
         /*
-        /// <summary>
-        /// Gets file (creates or opens)
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="vfsFileMode"></param>
-        /// <returns></returns>
-       // public IFile CreateFile(string path, VfsFileMode vfsFileMode) => new VfsFile(_engine, path, vfsFileMode);
+               private IDictionary<string, IEnumerable<string>> GetRecursiveDirsInternal(string path = Separator)
+               {
+                   var dir = new Directory( path);
+                   var list = dir.GetDirectoryContents();
+                   var dirNames = new Dictionary<string, IEnumerable<string>>();
+                   foreach (var a in list)
+                   {
+                       var locks = new List<string>(); //a.Locks.Where(f => f.Value).Select(f => f.Key);
+                       if (a is VfsFile)
+                           locks.AddRange(((VfsFile) a).Locks);
 
-        /// <summary>
-        /// Moves directory or file
-        /// </summary>
-        public void Move(string srcPath, string destPath)
-        {
-            if (srcPath == DiskRoot)
-                throw new VfsException("Root directory can't be moved!");
+                    //   dirNames.Add(a.Path, locks);
+                       if (a is Directory)
+                       {
+                           //var childDirs = GetRecursiveDirsInternal(a.Path);
+                       //    dirNames = dirNames.Union(childDirs).ToDictionary(k => k.Key, v => v.Value);
 
+                       }
+                   }
+                   return dirNames;
 
-            // Copy(srcPath, destPath);
-            if (Register.Resolve(_engine, MakeDir(srcPath)) != null)
-            {
-                var parentDir = FindDirectory(srcPath).Parent;
-                var objectName = GetPathName(srcPath);
-                parentDir.Check(objectName, true, false);
-                CopyInternal(srcPath, destPath);
-                parentDir.Delete(objectName, false, true, true);
-            }
-           // else
-            {
-                var dir = FindDirectory(GetPathDirectory(srcPath));
-                var objectName = GetPathName(srcPath);
-                dir.Check(objectName, true, false);
-                CopyFile(srcPath, destPath);
-                dir.Delete(objectName, false, true, false);
+               }
 
-            }
+               /// <summary>
+               /// Gets file (creates or opens)
+               /// </summary>
+               /// <param name="path"></param>
+               /// <param name="vfsFileMode"></param>
+               /// <returns></returns>
+              // public IFile CreateFile(string path, VfsFileMode vfsFileMode) => new VfsFile(_engine, path, vfsFileMode);
 
-        }
-
-        /// <summary>
-        /// Copies directory or file and creates destPath
-        /// </summary>
-        public void CopyWithCreation(string srcPath, string destPath)
-        {
-            var dirPath = GetPathDirectory(destPath);
-            var parentDir = FindDirectory(dirPath);
-            var objectName = GetPathName(destPath);
-            parentDir.CreateSubDirectory(objectName);
-            CopyInternal(srcPath, destPath);
-        }
-
-        /// <summary>
-        /// Copies directory or file
-        /// </summary>
-        public void Copy(string srcPath, string destPath)
-        {
-
-            //if (Register.Resolve(_engine, MakeDir(srcPath)) != null)
-            {
-                CopyInternal(srcPath, destPath);
-            }
-          //  else
-            {
-                CopyFile(srcPath, destPath);
-
-            }
-        }
+               /// <summary>
+               /// Moves directory or file
+               /// </summary>
+               public void Move(string srcPath, string destPath)
+               {
+                   if (srcPath == DiskRoot)
+                       throw new VfsException("Root directory can't be moved!");
 
 
-        private void CopyInternal(string srcPath, string destPath)
-        {
-            var srcDir = FindDirectory(srcPath);
+                   // Copy(srcPath, destPath);
+                   if (Register.Resolve(_engine, MakeDir(srcPath)) != null)
+                   {
+                       var parentDir = FindDirectory(srcPath).Parent;
+                       var objectName = GetPathName(srcPath);
+                       parentDir.Check(objectName, true, false);
+                       CopyInternal(srcPath, destPath);
+                       parentDir.Delete(objectName, false, true, true);
+                   }
+                  // else
+                   {
+                       var dir = FindDirectory(GetPathDirectory(srcPath));
+                       var objectName = GetPathName(srcPath);
+                       dir.Check(objectName, true, false);
+                       CopyFile(srcPath, destPath);
+                       dir.Delete(objectName, false, true, false);
 
-            var list = srcDir.GetDirectoryContents();
+                   }
 
-            foreach (var a in list)
-            {
-                if (a.IsDirectory)
-                {
-                    var subDir = a.Name;
+               }
 
-                    var destDir = FindDirectory(destPath);
-                    destDir.CreateSubDirectory(subDir);
-                    var dir = destPath + Separator + subDir;
-                    CopyInternal(a.Path, dir);
-                }
-                else
-                {
-                    CopyFile(a.Path, destPath);
-                }
-            }
-        }
+               /// <summary>
+               /// Copies directory or file and creates destPath
+               /// </summary>
+               public void CopyWithCreation(string srcPath, string destPath)
+               {
+                   var dirPath = GetPathDirectory(destPath);
+                   var parentDir = FindDirectory(dirPath);
+                   var objectName = GetPathName(destPath);
+                   parentDir.CreateSubDirectory(objectName);
+                   CopyInternal(srcPath, destPath);
+               }
 
-        private void CopyFile(string srcPath, string destPath)
-        {
-            var name = GetPathName(srcPath);
-            var destFile = new VfsFile( (destPath == Separator ? "" : destPath) + Separator + name, VfsFileMode.CreateNew);
-            var srcFile = new VfsFile( srcPath, VfsFileMode.Open);
+               /// <summary>
+               /// Copies directory or file
+               /// </summary>
+               public void Copy(string srcPath, string destPath)
+               {
 
-            srcFile.CopyTo(destFile);
-        }
-        */
+                   //if (Register.Resolve(_engine, MakeDir(srcPath)) != null)
+                   {
+                       CopyInternal(srcPath, destPath);
+                   }
+                 //  else
+                   {
+                       CopyFile(srcPath, destPath);
+
+                   }
+               }
+
+
+               private void CopyInternal(string srcPath, string destPath)
+               {
+                   var srcDir = FindDirectory(srcPath);
+
+                   var list = srcDir.GetDirectoryContents();
+
+                   foreach (var a in list)
+                   {
+                       if (a.IsDirectory)
+                       {
+                           var subDir = a.Name;
+
+                           var destDir = FindDirectory(destPath);
+                           destDir.CreateSubDirectory(subDir);
+                           var dir = destPath + Separator + subDir;
+                           CopyInternal(a.Path, dir);
+                       }
+                       else
+                       {
+                           CopyFile(a.Path, destPath);
+                       }
+                   }
+               }
+
+               private void CopyFile(string srcPath, string destPath)
+               {
+                   var name = GetPathName(srcPath);
+                   var destFile = new VfsFile( (destPath == Separator ? "" : destPath) + Separator + name, VfsFileMode.CreateNew);
+                   var srcFile = new VfsFile( srcPath, VfsFileMode.Open);
+
+                   srcFile.CopyTo(destFile);
+               }
+               */
 
         #region Helper methods for paths
 

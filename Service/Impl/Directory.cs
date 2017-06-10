@@ -14,6 +14,9 @@ namespace Emroy.Vfs.Service.Impl
     public abstract class VfsEntity
     {
         public string Name;
+
+        public Directory Parent;
+
     }
 
     public class VfsFile : VfsEntity
@@ -23,7 +26,7 @@ namespace Emroy.Vfs.Service.Impl
             Name = name;
         }
 
-        private List<string> _locks;
+        private List<string> _locks=new List<string>();
 
 
 
@@ -77,7 +80,7 @@ namespace Emroy.Vfs.Service.Impl
     {
 
         public static Directory Root = new Directory(VfsSystem.DiskRoot);
-        private readonly string _path;
+
 
         private List<VfsEntity> _entities = new List<VfsEntity>();
 
@@ -91,16 +94,14 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(VfsSystem.SeparatorChar))
             {
-                var dirs = path.Split(VfsSystem.SeparatorChar);
-
-                var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]) as Directory;
-                AssertDirIsNull(path, dir);
-                return dir.CreateFile(dirs[1], mode);
+                var dir = TraverseSubDirs(path, out string newPath);
+                return dir.CreateFile(newPath, mode);
             }
 
             AssertFileExists(path);
-            var file = new VfsFile(path);
+            var file = new VfsFile(path) { Parent = this };
             _entities.Add(file);
+
             return file;
         }
 
@@ -115,17 +116,16 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(VfsSystem.SeparatorChar))
             {
-                var dirs = path.Split(VfsSystem.SeparatorChar);
-
-                var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]) as Directory;
-                AssertDirIsNull(path, dir);
-                return dir.CreateSubDirectory(dirs[1]);
+                var dir = TraverseSubDirs(path, out string newPath);
+                return dir.CreateSubDirectory(newPath);
             }
             AssertDirExists(path);
-            var file = new Directory(path);
+            var file = new Directory(path) { Parent = this };
             _entities.Add(file);
             return file;
         }
+
+
 
 
 
@@ -137,13 +137,10 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(VfsSystem.SeparatorChar))
             {
-                var dirs = path.Split(VfsSystem.SeparatorChar);
-                AssertPathInvalid(path, dirs);
-                var dir = _entities.FirstOrDefault(f => f.Name == path) as Directory;
-                AssertDirIsNull(path, dir);
-                dir.DeleteSubDirectory(dirs[2]);
+                var dir = TraverseSubDirs(path, out string newPath);
+                dir.DeleteSubDirectory(newPath);
             }
-            AssertDirNotExists(path);
+            AssertDeleteDir(path);
             _entities.RemoveAll(f => f.Name == path);
         }
 
@@ -157,76 +154,112 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(VfsSystem.SeparatorChar))
             {
-                var dirs = path.Split(VfsSystem.SeparatorChar);
-                AssertPathInvalid(path, dirs);
-                var dir = _entities.FirstOrDefault(f => f.Name == path) as Directory;
-                AssertDirIsNull(path, dir);
-                dir.DeleteSubDirectory(dirs[2]);
+                var dir = TraverseSubDirs(path, out string newPath);
+                dir.DeleteSubDirectory(newPath);
             }
-            AssertFileNotExists(path);
+            AssertFileDelete(path);
             _entities.RemoveAll(f => f.Name == path);
         }
+
+        private Directory TraverseSubDirs(string path, out string newPath, int skip = 1)
+        {
+
+            var dirs = path.Split(VfsSystem.SeparatorChar);
+            var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]);
+            AssertDirIsNull(dirs[0], dir);
+            newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) => cur + VfsSystem.Separator + s).Substring(VfsSystem.Separator.Length);
+            return dir as Directory;
+
+
+        }
+
+        /// <summary>
+        /// Moves entity
+        /// </summary>
+        /// <param name="srcPath">file or directory to move </param>
+        /// <param name="destPath">destination directory </param>
+        public void MoveEntity(string srcPath, string destPath)
+        {
+
+            if (srcPath.Contains(VfsSystem.SeparatorChar))
+            {
+                var dir = TraverseSubDirs(srcPath, out string newPath);
+                dir.CopyEntity(newPath, destPath);
+                return;
+            }
+
+            var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
+            if (obj == null)
+            {
+                throw new VfsException($"Object {srcPath} does not exist!");
+            }
+
+            if (obj is VfsFile file && file.IsLocked())
+            {
+                throw new VfsException($"Can't move locked file {srcPath}!");
+            }
+
+            if (obj is Directory directory)
+            {
+                directory.CheckRestrictionsLock();
+            }
+
+            // destination
+            var skip = destPath.Count(f => f == VfsSystem.SeparatorChar) + 1;
+            Root.CopyEntity(obj, destPath, skip);
+
+
+        }
+
 
 
 
         /// <summary>
         /// Copies entity
         /// </summary>
-        /// <param name="srcPath">file to copy</param>
-        /// <param name="destPath">destination directory</param>
+        /// <param name="srcPath">file  or directory to copy </param>
+        /// <param name="destPath">destination directory (absolute path)</param>
         public void CopyEntity(string srcPath, string destPath)
         {
             if (srcPath.Contains(VfsSystem.SeparatorChar))
             {
-                var dirs = srcPath.Split(VfsSystem.SeparatorChar);
-                var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]) as Directory;
-                AssertDirIsNull(srcPath, dir);
-                dir.CopyEntity(dirs[1], destPath);
+                var dir = TraverseSubDirs(srcPath, out string newPath);
+                dir.CopyEntity(newPath, destPath);
+                return;
             }
 
-            var file = _entities.FirstOrDefault(f => f.Name == srcPath);
-            if (file == null)
+            var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
+            if (obj == null)
             {
                 throw new VfsException($"Object {srcPath} does not exist!");
             }
-            CopyEntity(file, destPath);
+            // destination
+
+            Root.CopyEntity(obj, destPath, destPath.Count(f => f == VfsSystem.SeparatorChar) + 1);
+
+
         }
 
 
-        /// <summary>
-        /// Copies entity from this dir into dest
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="destPath"></param>
-        private void CopyEntity(VfsEntity entity, string destPath)
+
+
+        private void CopyEntity(VfsEntity entity, string destPath, int depth)
         {
-            if (destPath.Contains(VfsSystem.SeparatorChar))
+            if (depth > 0)
             {
-                var dirs = destPath.Split(VfsSystem.SeparatorChar);
-                
-                var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]) as Directory;
-                AssertDirIsNull(destPath, dir);
-                dir.CopyEntity(entity, dirs[1]);
+                var dir = TraverseSubDirs(destPath, out string newPath, depth == 1 ? 0 : 1);
+                dir.CopyEntity(entity, newPath, depth - 1);
+                return;
             }
-            var destDir = _entities.FirstOrDefault(f => f.Name == destPath);
-            if (destDir == null)
+            var destObj = _entities.FirstOrDefault(f => f.Name == destPath);
+
+            if (destObj != null)
             {
-                throw new VfsException($"Directory {destPath} does not exist!");
+                throw new VfsException($"Object {destPath} already exists!");
             }
-            if (destDir is VfsFile )
-            {
-                throw new VfsException($"{destPath} can't point to file name!");
-            }
-            if (entity is VfsFile)
-            {
-                var obj = entity.Copy();
-                _entities.Add(obj);
-            }
-            else
-            {
-                var dir = entity as Directory;
-                dir._entities.ForEach( e => dir.CopyEntity(e, destPath ));
-            }
+            var obj = entity.Copy();
+            entity.Parent = this;
+            _entities.Add(obj);
 
         }
 
@@ -239,21 +272,38 @@ namespace Emroy.Vfs.Service.Impl
                 throw new VfsException($"Directory {path} already exists!");
             }
         }
-        private void AssertDirNotExists(string path)
+
+        /// <summary>
+        /// Throws if directory can't be deleted
+        /// </summary>
+        /// <param name="path"></param>
+        private void AssertDeleteDir(string path)
         {
-            if (_entities.FirstOrDefault(f => f is Directory && f.Name == path) == null)
+            var dir = _entities.FirstOrDefault(f => f is Directory && f.Name == path) as Directory;
+            if (dir == null)
             {
                 throw new VfsException($"Directory {path} does not exist!");
             }
+            dir.CheckRestrictionsSubDir();
+
         }
 
+        /// <summary>
+        /// Throws if file can't be deleted
+        /// </summary>
+        /// <param name="path"></param>
 
-
-        private void AssertFileNotExists(string path)
+        private void AssertFileDelete(string path)
         {
-            if (_entities.FirstOrDefault(f => f is VfsFile && f.Name == path) == null)
+            var file = _entities.FirstOrDefault(f => f is VfsFile && f.Name == path) as VfsFile;
+
+            if (file == null)
             {
                 throw new VfsException($"File {path} does not exist!");
+            }
+            if (file.IsLocked())
+            {
+                throw new VfsException($"Can't delete locked file {path}!");
             }
         }
 
@@ -267,21 +317,18 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        private static void AssertDirIsNull(string path, Directory dir)
+        private static void AssertDirIsNull(string path, VfsEntity entity)
         {
-            if (dir == null)
+            if (entity == null)
             {
-                throw new VfsException($"Directory {path} does not exist");
+                throw new VfsException($"Directory {path} does not exist!");
+            }
+            if (entity is VfsFile)
+            {
+                throw new VfsException($"Directory {path} corresponds to a file!");
             }
         }
 
-        private static void AssertPathInvalid(string path, string[] dirs)
-        {
-            if (dirs.Length < 3)
-            {
-                throw new VfsException($"Incorrect path : {path}");
-            }
-        }
 
         #endregion
 
@@ -292,27 +339,6 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        public string Path => _path;
-
-        public Directory Parent
-        {
-            get
-            {
-                var path = _path;
-                if (VfsSystem.IsRootedDir(path))
-                {
-                    path = path.TrimEnd(VfsSystem.SeparatorChar);
-                }
-                else if (path.EndsWith(VfsSystem.Separator))
-                {
-                    return null;
-                }
-                path = path.Substring(0, path.LastIndexOf("/", StringComparison.Ordinal) + 1);
-                return new Directory(path);
-            }
-        }
-
-
 
         public bool Contains(string name)
         {
@@ -320,158 +346,36 @@ namespace Emroy.Vfs.Service.Impl
             return dir != null;
         }
 
-
-        public IEnumerable<VfsEntity> GetDirectoryContents()
+        /// <summary>
+        /// Throws if directory contains locked files
+        /// </summary>
+        private void CheckRestrictionsLock()
         {
-            return _entities;
+            var locks = _entities.Where(f => f is VfsFile).Cast<VfsFile>().ToArray();
+            if (locks.Length > 0)
+            {
+                throw new VfsException("Can't move or delete directories with locked files!");
+            }
+
+
         }
 
-        //public IEnumerable<Entry> GetDirectoryContents()
-        //{
-        //    return GetDirectoryContentsInternal()
-        //        .Where(f => f.Path != (VfsSystem.Separator + ".") && !f.Path.Contains(".."));
-        //}
-
-
-        //private IEnumerable<Entry> GetDirectoryContentsInternal()
-        //{
-
-        //    var entries = _dir.List();
-        //    return (from entry in entries
-        //            let node = Node.Load(_engine, entry.Value)
-        //            select new Entry
-        //            {
-        //                Locks = node.Locks,
-        //                IsDirectory = node.IsDirectory,
-        //                AccessTime = node.Data.AccessTime,
-        //                CreationTime = node.Data.CreationTime,
-        //                Flags = node.Data.Flags,
-        //                ModifyTime = node.Data.ModifyTime,
-        //                Name = entry.Key,
-        //                Path = _path + entry.Key,
-        //                Size = node.Data.SizeByte,
-        //                Data = node.Data,
-        //                NodeIndex = node.Index
-        //            }).ToList();
-        //}
-
-
-
-
-        //public void Rename(string oldName, string newName)
-        //{
-        //    VfsSystem.AssertNameValid(oldName);
-        //    VfsSystem.AssertNameValid(newName);
-
-        //    if (!_dir.Contains(oldName))
-        //    {
-        //        throw new DirectoryNotFoundException("No such dir!");
-        //    }
-        //    if (_dir.Contains(newName))
-        //    {
-        //        throw new IOException("Directory with the same name exists!");
-        //    }
-        //    if (!_dir.Rename(oldName, newName))
-        //    {
-        //        throw new VfsException("Could not rename directory!");
-        //    }
-        //}
-
-
-        public void Check(string path, bool locks, bool subDirs)
+        /// <summary>
+        /// Thros if directory contains subdirectories
+        /// </summary>
+        private void CheckRestrictionsSubDir()
         {
-            if (path.Contains(VfsSystem.Separator))
+            var dirs = _entities.Where(f => f is Directory).Cast<Directory>().ToArray();
+            if (dirs.Length > 0)
             {
-                var pathArray = path.Split(VfsSystem.SeparatorChar);
-
-                var subDir = GetChildDirectory(pathArray[0]);
-                var newPath = pathArray.Skip(1).Aggregate(string.Empty, (cur, s) => cur + VfsSystem.Separator + s).Substring(1);
-                subDir.Check(newPath, locks, subDirs);
-            }
-            else
-            {
-                if (locks)
-                    CheckRestrictionLock(path);
-
-                if (subDirs)
-                    CheckRestrictionSubdirs(path);
-
-            }
-        }
-
-        private void CheckRestrictionSubdirs(string name)
-        {
-            VfsSystem.AssertNameValid(name);
-
-            //if (!_dir.Contains(name))
-            //{
-            //    throw new VfsException($"Directory {Name} does not contain {name}");
-            //}
-            var dir = GetChildDirectory(name);
-
-            if (dir != null)
-            {
-                var contents = dir.GetDirectoryContents();
-
-                if (contents.Any(f => f is Directory))
-                {
-                    throw new InvalidOperationException("Directory contains subdirectories");
-                }
-
-
-            }
-        }
-
-        private void CheckRestrictionLock(string name)
-        {
-            VfsSystem.AssertNameValid(name);
-
-            //if (!_dir.Contains(name))
-            //{
-            //    throw new VfsException($"Directory {Name} does not contain {name}");
-            //}
-            var dir = GetChildDirectory(name);
-
-            if (dir != null)
-            {
-                var contents = dir.GetDirectoryContents();
-
-
-                var file = contents.FirstOrDefault(f => f is VfsFile) as VfsFile;
-                if (file != null && file.IsLocked())
-                {
-
-                    throw new InvalidOperationException("Directory contains locked files!");
-                }
+                throw new VfsException("Can't move or delete directories with subdirectories!");
             }
         }
 
 
 
 
-        //public void Delete(string path, bool ignoreLock, bool ignoreSubdirs, bool dir)
-        //{
-
-        //    Check(path, !ignoreLock, !ignoreSubdirs);
-
-        //    if (path.Contains(VfsSystem.Separator))
-        //    {
-        //        string newPath;
-        //        var subDir = GetChildDirectory(path, out newPath);
-        //        subDir.Delete(newPath, ignoreLock, ignoreSubdirs, dir);
-        //    }
-        //    else
-        //    {
-        //        if (!ignoreLock && !ignoreSubdirs)
-        //        {
-        //            DeleteWithRestrictions(path, dir);
-        //        }
-        //        else
-        //        {
-        //            DeleteNoRestrictionsInternal(path, dir);
-        //        }
-        //    }
-        //}
+      
 
 
         /// <summary>
@@ -481,8 +385,8 @@ namespace Emroy.Vfs.Service.Impl
         /// <param name="dir"></param>
         private void DeleteWithRestrictions(string name, bool dir)
         {
-            CheckRestrictionSubdirs(name);
-            CheckRestrictionLock(name);
+            //  CheckRestrictionSubdirs(name);
+            // CheckRestrictionLock(name);
             //delete it!
             //if (!_dir.Delete(name))
             //{
