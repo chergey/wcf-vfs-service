@@ -13,7 +13,7 @@ namespace Emroy.Vfs.Service.Impl
     /// <summary>
     /// Vfs main interface implementation
     /// </summary>
-    
+
     public class VfsDirectory : VfsEntity, IVfsDirectory
     {
 
@@ -32,7 +32,7 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         public const string DiskRoot = "c:";
 
-   
+
         /// <summary>
         /// Parent directory for all items
         /// </summary>
@@ -98,7 +98,10 @@ namespace Emroy.Vfs.Service.Impl
             }
             if (!canDeleteSubDir)
             {
-                dir1.CheckRestrictionsSubDir();
+                if (_entities.Any(f => f is VfsDirectory))
+                {
+                    throw new VfsException("Can't delete directories with subdirectories!");
+                }
             }
             dir1.CheckRestrictionsLock();
             _entities.RemoveAll(f => f.Name == path);
@@ -106,7 +109,7 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-    
+
         public void DeleteFile(string path)
         {
             if (path.Contains(SeparatorChar))
@@ -118,7 +121,7 @@ namespace Emroy.Vfs.Service.Impl
             _entities.RemoveAll(f => f.Name == path);
         }
 
-      
+
 
 
         public void MoveEntity(string srcPath, string destPath)
@@ -147,7 +150,7 @@ namespace Emroy.Vfs.Service.Impl
             }
 
             // destination
-            var skip = destPath.Count(f => f == VfsDirectory.SeparatorChar) + 1;
+            var skip = destPath.Count(f => f == SeparatorChar) + 1;
             Root.CopyEntity(obj, destPath, skip);
 
             _entities.RemoveAll(f => f.Name == srcPath);
@@ -190,13 +193,13 @@ namespace Emroy.Vfs.Service.Impl
             return obj;
         }
 
-     
+
         public IVfsDirectory FindSubDir(string path, out string newPath, int skip = 1)
         {
 
             var dirs = path.Split(SeparatorChar);
             var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]);
-            AssertDirIsNull(dirs[0], dir);
+            AssertDirIsNullOrIsFile(dirs[0], dir);
             newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) => cur + Separator + s).Substring(VfsDirectory.Separator.Length);
             return dir as IVfsDirectory;
 
@@ -231,24 +234,27 @@ namespace Emroy.Vfs.Service.Impl
         /// Returns directory contents
         /// </summary>
         /// <param name="path"></param>
-        /// <returns>list of tuple directory name, list of locking users </returns>
-        public List<(string, List<string>)> GetContents(string path)
+        /// <returns>list of tuple [directory name, list of locking users] </returns>
+        public List<(string, List<string>)> GetContents(string path=null)
         {
-            if (path.Contains(SeparatorChar))
+            if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
                 return dir.GetContents(newPath);
             }
             var contents = new List<(string, List<string>)>();
 
-            contents.AddRange(_entities//.OrderBy(f => f.Name)
-                    .Select(f => (string.Join("\\", f.Parents
-                                      .Select(p => p.Name)) + Separator + f.Name, f is VfsFile file ? file.Locks : new List<string>()))
-                                      );
-            var dirs = _entities/*.OrderBy(f => f.Name)*/.Where(f => f is VfsDirectory).Cast<VfsDirectory>();
+            contents.AddRange(_entities.Where(f => f is VfsFile)
+                    .Cast<VfsFile>()
+                    .OrderBy(f => f.Name)
+                    .Select(f => (f.Path, f.Locks))
+                    );
+
+            var dirs = _entities.OrderBy(f => f.Name).Where(f => f is VfsDirectory).Cast<VfsDirectory>();
             foreach (var en in dirs)
             {
-                contents.AddRange( en.GetContents( en.Name));
+                contents.Add((en.Path, new List<string>()));
+                contents.AddRange(en.GetContents(en.Name));
             }
             return contents;
         }
@@ -281,13 +287,13 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     file.UnLockFile(label);
                 }
-               
+
             }
             else
             {
-                throw new VfsException("Directory locking is not provided!");
+                throw new VfsException("Directory locking is not allowed!");
             }
-  
+
 
 
 
@@ -318,7 +324,7 @@ namespace Emroy.Vfs.Service.Impl
             }
             if (file.IsLocked())
             {
-                throw new VfsException($"Can't delete locked file {path}!");
+                throw new VfsException($"Can't delete locked file {file.Path}!");
             }
         }
 
@@ -332,7 +338,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        private static void AssertDirIsNull(string path, VfsEntity entity)
+        private static void AssertDirIsNullOrIsFile(string path, VfsEntity entity)
         {
             if (entity == null)
             {
@@ -340,12 +346,12 @@ namespace Emroy.Vfs.Service.Impl
             }
             if (entity is VfsFile)
             {
-                throw new VfsException($"Directory {path} corresponds to a file!");
+                throw new VfsException($"Directory {entity.Path} corresponds to a file!");
             }
         }
 
 
-   
+
         /// <summary>
         /// Throws if directory contains locked files
         /// </summary>
@@ -360,33 +366,9 @@ namespace Emroy.Vfs.Service.Impl
 
         }
 
-        /// <summary>
-        /// Thros if directory contains subdirectories
-        /// </summary>
-        private void CheckRestrictionsSubDir()
-        {
-            var dirs = _entities.Where(f => f is VfsDirectory);
-            if (dirs.Any())
-            {
-                throw new VfsException("Can't move or delete directories with subdirectories!");
-            }
-        }
 
 
         #endregion
-
-
-        /// <summary>
-        /// Retrieves 'file.txt' from '/dir/file.txt'
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string GetPathName(string path)
-        {
-
-            var pos = path.LastIndexOf(SeparatorChar);
-            return path.Substring(pos + 1);
-        }
 
         /// <summary>
         /// Retrieves '/dir1/' from '/dir/file.txt'
@@ -400,6 +382,11 @@ namespace Emroy.Vfs.Service.Impl
             return path.Substring(0, pos + 1);
         }
 
+        /// <summary>
+        /// Retrieves 'file.txt' from '/dir/file.txt'
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public static string GetFileName(string path)
         {
             var pos = path.LastIndexOf(SeparatorChar);

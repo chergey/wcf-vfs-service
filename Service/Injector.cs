@@ -11,6 +11,9 @@ using NConcern;
 
 namespace Emroy.Vfs.Service
 {
+    /// <summary>
+    /// Logging aspect
+    /// </summary>
     public class Injector : IAspect
     {
 
@@ -25,7 +28,7 @@ namespace Emroy.Vfs.Service
                 DebugInfo($"{method.Name} ({str}) started.");
 
                 body();
-                DebugInfo($"{method.Name}  ({str}) finished. Elapsed: {sw.Elapsed}");
+                DebugInfo($"{method.Name}  ({str}) finished. Elapsed: {sw.Elapsed:g}");
                 sw.Stop();
             });
 

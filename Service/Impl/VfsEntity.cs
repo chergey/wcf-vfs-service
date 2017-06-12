@@ -24,7 +24,7 @@ namespace Emroy.Vfs.Service.Impl
         /// <summary>
         /// List of parents beginning with the highest
         /// </summary>
-        public List<VfsDirectory> Parents
+        protected List<VfsDirectory> Parents
         {
             get
             {
@@ -40,5 +40,10 @@ namespace Emroy.Vfs.Service.Impl
             }
         }
 
+        /// <summary>
+        /// Full path
+        /// </summary>
+        public string Path => string.Join(VfsDirectory.Separator,
+                                  Parents.Select(f => f.Name)) +VfsDirectory.Separator + Name;
     }
 }

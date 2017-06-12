@@ -51,7 +51,7 @@ namespace Emroy.Vfs.Client
         public void Process()
         {
 
-            bool connected = false;
+         
             while (true)
             {
                 string cmd = GetInput();
@@ -69,16 +69,18 @@ namespace Emroy.Vfs.Client
                     {
                         inputCommand[1] = ServiceUriDefault;
                     }
-                    if (connected)
+
+                   if (( _service as IClientChannel)?.State == CommunicationState.Opened)
                     {
                         Console.WriteLine("You are already connected!");
                         continue;
                     }
+
                     var error = ConnectToServer(inputCommand[1]);
 
                     if (!string.IsNullOrEmpty(error))
                     {
-                        Console.WriteLine("Could not connect to server. " + error);
+                        Console.WriteLine("Could not connect to server:\n" + error);
                         continue;
                     }
                     VfsServiceCallback.NotificationEvent += VfsServiceCallback_NotificationEvent;
@@ -86,32 +88,27 @@ namespace Emroy.Vfs.Client
                     var response = _service.Connect(_userName);
                     Console.WriteLine(response.Message);
 
-                    if (!response.Fail)
-                    {
-                        connected = true;
-                    }
+
 
                 }
                 else if (string.Equals(inputCommand[0], "QUIT", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (!connected)
+                    if ((_service as IClientChannel).State!= CommunicationState.Opened)
                     {
                         Console.WriteLine("You are not connected.");
                         continue;
                     }
+                    Disconnect();
 
 
-                    Thread.Sleep(200);
-                    break;
                 }
                 //other commands
                 else
                 {
 
-                    VfsCommandType type;
-                    if (_commandMap.TryGetValue(inputCommand[0], out type) || _commandMap.TryGetValue(inputCommand[0].ToUpper(), out type))
+                    if (TryToFindCommand(inputCommand, out VfsCommandType type))
                     {
-                        if (!connected)
+                       if ( (_service as IClientChannel)?.State != CommunicationState.Opened)
                         {
                             Console.WriteLine("You are not connected.");
                             continue;
@@ -126,15 +123,18 @@ namespace Emroy.Vfs.Client
                                 Arguments = inputCommand.Skip(1).ToArray()
                             });
                             Console.WriteLine(response.Message);
+
+                         
                         }
-                        catch (CommunicationObjectFaultedException ex)
+                        catch (CommunicationException ex)
                         {
-                            Console.WriteLine("Comminication lost:" + ex.Message);
+                            Console.WriteLine("Comminication lost:\n" + ex.Message);
+                            ((IClientChannel)_service)?.Abort();
                             break;
                         }
-                        catch (ProtocolException ex)
+                        catch (Exception ex)
                         {
-                            Console.WriteLine("Protocol error: " + ex.Message);
+                            Console.WriteLine("Error: \n" + ex.Message);
                             break;
                         }
 
@@ -153,13 +153,33 @@ namespace Emroy.Vfs.Client
                 }
             }
 
-            Console.WriteLine("Leaving...");
+           
+        }
+
+        private void Disconnect()
+        {
+            Console.WriteLine("Leaving...\n");
             if (_userName != null)
             {
                 _service.Disconnect(_userName);
                 VfsServiceCallback.NotificationEvent -= VfsServiceCallback_NotificationEvent;
-            }
 
+                try
+                {
+                    ((IClientChannel) _service)?.Close();
+                }
+                catch
+                {
+                    ((IClientChannel) _service)?.Abort();
+                }
+            }
+            Console.WriteLine(">>");
+        }
+
+        private bool TryToFindCommand(string[] inputCommand, out VfsCommandType type)
+        {
+            return _commandMap.TryGetValue(inputCommand[0], out type) || 
+                _commandMap.TryGetValue(inputCommand[0].ToUpper(), out type);
         }
 
         private static string GetInput()
@@ -173,6 +193,7 @@ namespace Emroy.Vfs.Client
             if (e.UserName != _userName)
             {
                 Console.WriteLine(e.Message);
+                Console.WriteLine(">>");
             }
         }
 
@@ -197,6 +218,7 @@ namespace Emroy.Vfs.Client
                  "QUIT - Quits \n " +
                  "HELP - Prints help \n "
                  );
+            Console.WriteLine(">>");
         }
 
         public string ConnectToServer(string serviceUrl)

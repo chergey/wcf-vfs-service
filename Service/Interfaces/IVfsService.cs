@@ -1,7 +1,8 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.ServiceModel;
 using Emroy.Vfs.Service.Dto;
-using Emroy.Vfs.Service.Impl;
+
 
 namespace Emroy.Vfs.Service.Interfaces
 {
@@ -36,15 +37,29 @@ namespace Emroy.Vfs.Service.Interfaces
         Response Disconnect(string userName);
 
 
+ 
     }
+
+    /// <summary>
+    /// Response data
+    /// </summary>
     [DataContract]
     public class Response
     {
+        /// <summary>
+        /// Message returned to client
+        /// </summary>
         [DataMember]
-        public string Message;
+        public string Message; 
 
+        /// <summary>
+        /// True if fail
+        /// </summary>
         [DataMember]
         public bool Fail;
+
+        [DataMember]
+        public object Data;
     }
 
     /// <summary>
