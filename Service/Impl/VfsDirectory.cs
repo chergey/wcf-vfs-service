@@ -370,29 +370,7 @@ namespace Emroy.Vfs.Service.Impl
 
         #endregion
 
-        /// <summary>
-        /// Retrieves '/dir1/' from '/dir/file.txt'
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string GetPathDirectory(string path)
-        {
-
-            var pos = path.LastIndexOf(SeparatorChar);
-            return path.Substring(0, pos + 1);
-        }
-
-        /// <summary>
-        /// Retrieves 'file.txt' from '/dir/file.txt'
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string GetFileName(string path)
-        {
-            var pos = path.LastIndexOf(SeparatorChar);
-            return pos == -1 ? path : path.Substring(pos + 1);
-        }
-
+    
 
     }
 }
