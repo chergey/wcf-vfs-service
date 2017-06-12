@@ -100,6 +100,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 dir1.CheckRestrictionsSubDir();
             }
+            dir1.CheckRestrictionsLock();
             _entities.RemoveAll(f => f.Name == path);
         }
 
@@ -219,7 +220,7 @@ namespace Emroy.Vfs.Service.Impl
 
             if (destObj != null)
             {
-                throw new VfsException($"Object {destPath} already exists!");
+                throw new VfsException($"Object {entity.Name} already exists!");
             }
             var obj = entity.Copy();
             obj.Parent = this;
@@ -240,11 +241,12 @@ namespace Emroy.Vfs.Service.Impl
             }
             var contents = new List<(string, List<string>)>();
 
-            contents.AddRange(_entities.OrderBy(f => f.Name)
+            contents.AddRange(_entities//.OrderBy(f => f.Name)
                     .Select(f => (string.Join("\\", f.Parents
                                       .Select(p => p.Name)) + Separator + f.Name, f is VfsFile file ? file.Locks : new List<string>()))
                                       );
-            foreach (var en in _entities.OrderBy(f => f.Name).Where(f => f is VfsDirectory).Cast<VfsDirectory>())
+            var dirs = _entities/*.OrderBy(f => f.Name)*/.Where(f => f is VfsDirectory).Cast<VfsDirectory>();
+            foreach (var en in dirs)
             {
                 contents.AddRange( en.GetContents( en.Name));
             }
@@ -349,8 +351,8 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         private void CheckRestrictionsLock()
         {
-            var locks = _entities.Where(f => f is VfsFile).Cast<VfsFile>().ToArray();
-            if (locks.Length > 0)
+            var locks = _entities.Where(f => f is VfsFile).Cast<VfsFile>().Where(f => f.Locks.Any());
+            if (locks.Any())
             {
                 throw new VfsException("Can't move or delete directories with locked files!");
             }
@@ -363,14 +365,12 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         private void CheckRestrictionsSubDir()
         {
-            var dirs = _entities.Where(f => f is VfsDirectory).Cast<VfsDirectory>().ToArray();
-            if (dirs.Length > 0)
+            var dirs = _entities.Where(f => f is VfsDirectory);
+            if (dirs.Any())
             {
                 throw new VfsException("Can't move or delete directories with subdirectories!");
             }
         }
-
-
 
 
         #endregion

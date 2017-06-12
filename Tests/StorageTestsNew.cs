@@ -123,8 +123,32 @@ namespace Emroy.Vfs.Tests
             _root.CreateFile("file123456.txt");
             _root.MoveEntity("file123456.txt", "dir1");
 
-            var a=_root.GetContents("");
+            var a = _root.GetContents("");
             Assert.IsFalse(_root.Contains("file123456.txt"));
+
+        }
+
+
+
+
+        [TestMethod]
+        [ExpectedException(typeof(VfsException))]
+        public void TestDelete()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateSubDirectory("dir2");
+            _root.DeleteSubDirectory("dir1", false);
+
+        }
+
+        
+        [TestMethod]
+        public void TestDeleteWithSubdirectories()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            var dir2 = dir1.CreateSubDirectory("dir2");
+            dir2.CreateSubDirectory("dir3");
+            _root.DeleteSubDirectory("dir1", true);
 
         }
 

@@ -49,7 +49,7 @@ namespace Emroy.Vfs.Service.Impl
         public VfsService()
         {
             //add logging
-           // Aspect.Weave<Injector>(typeof(VfsService));
+          //  Aspect.Weave<Injector>(typeof(VfsService));
         }
 
 
@@ -65,14 +65,14 @@ namespace Emroy.Vfs.Service.Impl
             {
                 ValidateArguments(command.Arguments, 1);
 
-                var dir = command.Arguments[0];
+                var path = command.Arguments[0];
               //  if (dir.StartsWith(VfsDirectory.DiskRoot))
               //  {
               //      dir = dir.TrimStart(VfsDirectory.DiskRoot.ToCharArray());
               //  }
-                _users.Single(f => f.Name == command.UserName).CurDir = dir;
+                _users.Single(f => f.Name == command.UserName).CurDir = path;
 
-                return $"Directory {command.Arguments[0]} saved!";
+                return $"Directory { AddLabel(path)} saved!";
             }
 
 
@@ -81,10 +81,10 @@ namespace Emroy.Vfs.Service.Impl
             public string CreateDir(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
-                var dir = GetDir(command);
+                var path = GetDir(command);
 
-                VfsDirectory.Root.CreateSubDirectory(dir);
-                return $"Directory {command.Arguments[0]} created!";
+                VfsDirectory.Root.CreateSubDirectory(path);
+                return $"Directory { AddLabel(path)} created!";
             }
 
            
@@ -92,10 +92,9 @@ namespace Emroy.Vfs.Service.Impl
             public string CreateFile(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
-                var dir = GetDir(command);
-                VfsDirectory.Root.CreateFile(dir);
-                return
-                    $"File {command.Arguments[0]} created!";
+                var path = GetDir(command);
+                VfsDirectory.Root.CreateFile(path);
+                return $"File { AddLabel(path)} created!";
             }
 
             /// <summary>
@@ -111,7 +110,8 @@ namespace Emroy.Vfs.Service.Impl
             {
                 ValidateArguments(command.Arguments, 0);
                 var path = "";
-                var list = VfsDirectory.Root.GetContents(path)
+                var contents = VfsDirectory.Root.GetContents(path);
+                var list = contents
                     .Aggregate(string.Empty, (cur, s)=> 
                 cur + new string('|',s.Item1.Split(VfsDirectory.SeparatorChar).Length-1)
                 + s.Item1.Substring(s.Item1.LastIndexOf(VfsDirectory.SeparatorChar) + 1)
@@ -134,7 +134,7 @@ namespace Emroy.Vfs.Service.Impl
                 }
 
                 VfsDirectory.Root.MoveEntity(srcDir, destDir);
-                return $"Object {command.Arguments[0]} moved to {command.Arguments[1]}";
+                return $"Object {AddLabel(srcDir)} moved to {AddLabel(destDir)}";
             }
 
           
@@ -145,7 +145,7 @@ namespace Emroy.Vfs.Service.Impl
 
 
                 VfsDirectory.Root.CopyEntity(srcDir, destDir);
-                return $"Object {command.Arguments[0]} copied to {command.Arguments[1]}!";
+                return $"Object {AddLabel(srcDir)} copied to {AddLabel(destDir)}!";
             }
 
 
@@ -159,12 +159,12 @@ namespace Emroy.Vfs.Service.Impl
                     throw new VfsException("Deleting current dir is not allowed!");
                 }
 
-                var dir = GetDir(command);
+                var path = GetDir(command);
 
-                VfsDirectory.Root.DeleteSubDirectory(dir, true);
+                VfsDirectory.Root.DeleteSubDirectory(path, true);
 
 
-                return $"Directory {command.Arguments[0]} deleted with subdirectories!";
+                return $"Directory {AddLabel(path)} deleted with subdirectories!";
             }
 
           
@@ -176,11 +176,11 @@ namespace Emroy.Vfs.Service.Impl
                     throw new VfsException("Deleting current dir is not allowed!");
                 }
 
-                var dir = GetDir(command);
+                var path = GetDir(command);
 
-                VfsDirectory.Root.DeleteSubDirectory(dir, false);
+                VfsDirectory.Root.DeleteSubDirectory(path, false);
 
-                return $"Directory {command.Arguments[0]} deleted!";
+                return $"Directory {AddLabel(path)} deleted!";
             }
 
 
@@ -193,7 +193,7 @@ namespace Emroy.Vfs.Service.Impl
                 var path = GetDir(command);
                 VfsDirectory.Root.LockFile(path, command.UserName, true);
 
-                return $"File {command.Arguments[0]} locked!";
+                return $"File {AddLabel(path)} locked!";
             }
 
           
@@ -204,20 +204,26 @@ namespace Emroy.Vfs.Service.Impl
                 var path = GetDir(command);
                 VfsDirectory.Root.LockFile(path, command.UserName, false);
 
-                return $"File {command.Arguments[0]} unlocked!";
+                return $"File {AddLabel(path)} unlocked!";
             }
 
          
             public string DeleteFile(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
-                var dir = GetDir(command);
-                VfsDirectory.Root.DeleteFile(dir);
+                var path = GetDir(command);
+                VfsDirectory.Root.DeleteFile(path);
 
-                return $"File {command.Arguments[0]} deleted!";
+                return $"File {AddLabel(path)} deleted!";
 
             }
 
+            #region Helper methods
+
+            public static string AddLabel(string str)
+            {
+                return VfsDirectory.DiskRoot + VfsDirectory.Separator + str;
+            }
             public static string GetCurDir(string userName)
             {
                 string dir;
@@ -269,7 +275,7 @@ namespace Emroy.Vfs.Service.Impl
             }
 
 
-            #region Helper methods
+            
 
       
             private void ValidateArguments(string[] commandArguments, int count)
