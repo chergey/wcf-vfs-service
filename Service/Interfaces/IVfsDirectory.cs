@@ -88,5 +88,10 @@ namespace Emroy.Vfs.Service.Interfaces
         /// <param name="path"></param>
         /// <returns></returns>
         VfsEntity TraverseSubdirs(string path);
+
+        /// <summary>
+        /// Delete all directories
+        /// </summary>
+         void Clean();
     }
 }

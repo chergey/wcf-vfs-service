@@ -83,10 +83,12 @@ namespace Emroy.Vfs.Tests
             Assert.IsTrue(dir23.Contains("dir1"));
             Assert.IsTrue((dir23 as VfsEntity).Parent.Name == "dir11");
 
-  
+            ShouldThrow(() => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
+                "File got copied to a file! AAAA!!!");
 
-            //  _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt");
-            //    _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file22.txt");
+            ShouldThrow(() => _root.CopyEntity("dir1", "dir11\\dir23"), 
+                "Directory got copied twtice! AAAAA!");
+
 
         }
 
@@ -106,21 +108,19 @@ namespace Emroy.Vfs.Tests
             _root.CreateFile("file123456.txt");
             _root.MoveEntity("file123456.txt", "dir1");
 
-            var a = _root.GetContents("");
+   
             Assert.IsFalse(_root.Contains("file123456.txt"));
 
         }
 
 
-
-
         [TestMethod]
-        [ExpectedException(typeof(VfsException))]
         public void TestDelete()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateSubDirectory("dir2");
-            _root.DeleteSubDirectory("dir1", false);
+            ShouldThrow(() => _root.DeleteSubDirectory("dir1", false),
+                "Directory with subdiretories got deleted! AAAA!!");
 
         }
 
@@ -147,16 +147,9 @@ namespace Emroy.Vfs.Tests
             _root.CreateFile("file123456.txt");
             file1.LockFile("Antonio");
 
-            try
-            {
-                _root.DeleteFile("file1.txt");
-            }
-            catch (VfsException)
-            {
-                return;
-            }
-            Assert.Fail("Locked file got deleted!");
-
+            ShouldThrow(() => _root.DeleteFile("file1.txt"), "Locked file got deleted! AAAA!");
+    
+          
 
         }
 
@@ -168,23 +161,27 @@ namespace Emroy.Vfs.Tests
              dir2.CreateFile("file3.txt");
             _root.LockFile("dir1\\dir2\\file3.txt", "default", true);
             dir2.CreateSubDirectory("dir3");
+            ShouldThrow(() => _root.DeleteSubDirectory("dir1", true), "Locked file got deleted! AAAA!!");
+
            
-            try
-            {
-                _root.DeleteSubDirectory("dir1", true);
-            }
-            catch (VfsException)
-            {
-                return;
-            }
-            Assert.Fail("Locked file got deleted!");
 
         }
 
+     
+        [TestCleanup]
         public void TearDown()
         {
-           // _root 
-        }
+           _root.Clean();
 
+        }
+        public void ShouldThrow(Action action, string message)
+        {
+            try
+            {
+                action();
+                Assert.Fail(message);
+            }
+            catch (VfsException) { }
+        }
     }
 }

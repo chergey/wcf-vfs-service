@@ -373,6 +373,11 @@ namespace Emroy.Vfs.Service.Impl
             }
         }
 
+        public void Clean()
+        {
+            _entities.Clear();
+        }
+
 
 
         #endregion
