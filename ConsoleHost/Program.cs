@@ -10,12 +10,12 @@ namespace Emroy.Vfs.ConsoleHost
 
         public static void Main(string[] args)
         {
-            //_svcHost = new ServiceHost(typeof (VfsService));
-            _//svcHost.Open();
+            _svcHost = new ServiceHost(typeof (VfsService));
+            _svcHost.Open();
             Console.WriteLine("Press key to stop service...");
             Console.Read();
         }
 
-      
+   
     }
 }

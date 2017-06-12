@@ -92,17 +92,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\IVfsDirectory.cs" />
+    <Compile Include="Interfaces\IVfsFile.cs" />
+    <Compile Include="Impl\VfsEntity.cs" />
     <Compile Include="InterceptAttribute.cs" />
-    <Compile Include="Interfaces\IDirectory.cs" />
-    <Compile Include="Interfaces\IStorage.cs" />
-    <Compile Include="Impl\Directory.cs" />
-    <Compile Include="Dto\Entry.cs" />
+    <Compile Include="Impl\VfsDirectory.cs" />
     <Compile Include="Impl\VfsFile.cs" />
-    <Compile Include="Enums\VfsFileMode.cs" />
-    <Compile Include="Interfaces\IFile.cs" />
-    <Compile Include="Interfaces\IPersistence.cs" />
     <Compile Include="Interfaces\IVfsService.cs" />
-    <Compile Include="Impl\MemoryStorage.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Impl\VfsService.cs" />

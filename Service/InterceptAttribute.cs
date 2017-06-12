@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using KingAOP.Aspects;
+
 //using KingAOP.Aspects;
 
 
@@ -16,7 +18,7 @@ namespace Emroy.Vfs.Service
          }
          */
     }
-    /*
+    
     public class InterceptAttribute :  OnMethodBoundaryAspect
     {
         private readonly Stopwatch _stopwatch;
@@ -39,5 +41,5 @@ namespace Emroy.Vfs.Service
             Console.WriteLine($"Method  {args.Method.Name} finished - Elapsed Ticks: {_stopwatch.ElapsedTicks}");
         }
     }
-    */
+    
 }

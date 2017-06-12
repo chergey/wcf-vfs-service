@@ -9,6 +9,7 @@ namespace Emroy.Vfs.Service.Dto
     public class VfsUser
     {
         public string CurDir;
+        public string Sid;
         public string Name;
 
         public IVfsServiceCallback Callback;

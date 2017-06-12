@@ -7,7 +7,7 @@ using System.ServiceModel;
 using Emroy.Vfs.Service.Dto;
 using Emroy.Vfs.Service.Enums;
 using Emroy.Vfs.Service.Interfaces;
-/*
+
 using KingAOP;
 using Ninject;
 using NLog;
@@ -15,7 +15,7 @@ using NLog;
 namespace Emroy.Vfs.Service.Impl
 {
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)]
-  
+
     public class VfsService : IVfsService
     {
 
@@ -28,7 +28,7 @@ namespace Emroy.Vfs.Service.Impl
                 [VfsCommandType.MD] = c => funcList.CreateDir(c),
                 [VfsCommandType.CD] = c => funcList.SetCurDir(c),
                 [VfsCommandType.PRINT] = c => funcList.Print(c),
-                [VfsCommandType.MF] = c => funcList.NewFile(c),
+                [VfsCommandType.MF] = c => funcList.CreateFile(c),
                 [VfsCommandType.MOVE] = c => funcList.Move(c),
                 [VfsCommandType.COPY] = c => funcList.Copy(c),
                 [VfsCommandType.DEL] = c => funcList.DeleteFile(c),
@@ -39,33 +39,13 @@ namespace Emroy.Vfs.Service.Impl
             };
 
 
-        static IStorage _storage;
-        static VfsSystem _system;
 
-        private const uint DeviceSize = 1 << 10 << 10 << 9;
 
         static readonly List<VfsUser> _users = new List<VfsUser>();
 
         public static Logger AppLogger = LogManager.GetCurrentClassLogger();
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public VfsService()
-        {
-            //init storage
-            var kernel = new StandardKernel();
-            kernel.Bind<IStorage>()
-                .To<MemoryStorage>()
-                .WithConstructorArgument("sizeInBytes", DeviceSize);
 
-            _storage= kernel.Get<IStorage>();
-
-            _system = new VfsSystem(_storage);
-            _system.Format(DeviceSize >> 10, 4);
-
-
-        }
 
         public static void DebugInfo(string info)
         {
@@ -83,73 +63,84 @@ namespace Emroy.Vfs.Service.Impl
 
             public string SetCurDir(VfsCommand command)
             {
-                var dir = GetCurDir(command);
+                ValidateArguments(command.Arguments, 1);
+                //var dir = GetCurDir(command);
 
-                var directory=_system.FindDirectory(dir.Path + command.Arguments[0]);
-
-                lock (_users)
+                // var directory = _system.FindDirectory(dir.Path + command.Arguments[0]);
+                var dir = command.Arguments[0];
+                if (dir.StartsWith(VfsDirectory.DiskRoot))
                 {
-                    _users.Single(f => f.Name == command.UserName).CurDir = directory.Path;
+                    dir = dir.TrimStart(VfsDirectory.DiskRoot.ToCharArray()[0]);
                 }
-                return $"Directory {command.Arguments[0].BringToExternalForm()} saved!";
+                _users.Single(f => f.Name == command.UserName).CurDir = dir;
+
+                return $"Directory {command.Arguments[0]} saved!";
             }
+
+
 
             [Intercept]
             public string CreateDir(VfsCommand command)
             {
-                var dir = GetCurDir(command);
+                ValidateArguments(command.Arguments, 1);
+                var dir = GetDir(command);
 
-                dir.CreateSubDirectoryInPath(command.Arguments[0]);
-                return $"Directory {command.Arguments[0].BringToExternalForm()} created!";
+                VfsDirectory.Root.CreateSubDirectory(dir);
+                return $"Directory {command.Arguments[0]} created!";
             }
 
             [Intercept]
 
-            public string NewFile(VfsCommand command)
+            public string CreateFile(VfsCommand command)
             {
-                var dir = GetUserDir(command.UserName);
-                _system.CreateFile(dir + command.Arguments[0], VfsFileMode.CreateNew);
-                return 
-                    $"File {VfsSystem.GetFileName(command.Arguments[0]).BringToExternalForm()} created!";
+                ValidateArguments(command.Arguments, 1);
+                var dir = GetDir(command);
+                VfsDirectory.Root.CreateFile(dir);
+                return
+                    $"File {VfsDirectory.GetFileName(command.Arguments[0])} created!";
             }
 
             [Intercept]
             public string Print(VfsCommand command)
             {
-                return "Disk structure:\nc:\n"+ 
-                    _system.GetTextualRepresentation(command.UserName).BringToExternalForm();
+                ValidateArguments(command.Arguments, 0);
+                var path = "";
+                return "Disk structure:\nc:\n" + VfsDirectory.Root.GetContents(path);
             }
 
             [Intercept]
             public string Move(VfsCommand command)
             {
-                var dir = GetUserDir(command.UserName);
+                ValidateArguments(command.Arguments, 2);
+                GetDir(command, out var srcDir, out var destDir);
 
-                if (dir == command.Arguments[0])
+                if (srcDir == command.Arguments[0])
                 {
                     throw new VfsException("Moving current dir is not allowed!");
                 }
-                SetSrcAndDestPaths(command, dir, out var srcPath, out var destPath);
-                _system.Move(srcPath, destPath);
-                return $"Object {command.Arguments[0].BringToExternalForm()} moved to {command.Arguments[1].BringToExternalForm()}";
+
+                VfsDirectory.Root.MoveEntity(srcDir, destDir);
+                return $"Object {command.Arguments[0]} moved to {command.Arguments[1]}";
             }
 
             [Intercept]
             public string Copy(VfsCommand command)
             {
-                var dir = GetUserDir(command.UserName);
+                ValidateArguments(command.Arguments, 2);
+                GetDir(command, out var srcDir, out var destDir);
 
-                SetSrcAndDestPaths( command, dir, out var srcPath, out var destPath);
-                _system.Copy(srcPath, destPath);
-                return $"Object {command.Arguments[0].BringToExternalForm()} copied to {command.Arguments[1].BringToExternalForm()}!";
+
+                VfsDirectory.Root.CopyEntity(srcDir, destDir);
+                return $"Object {command.Arguments[0]} copied to {command.Arguments[1]}!";
             }
 
-         
+
 
             [Intercept]
             public string DeleteTree(VfsCommand command)
             {
-                var dir = GetUserDir(command.UserName);
+                ValidateArguments(command.Arguments, 1);
+                var dir = GetDir(command);
 
                 if (dir == command.Arguments[0])
                 {
@@ -158,15 +149,17 @@ namespace Emroy.Vfs.Service.Impl
 
                 var curDir = GetCurDir(command);
 
-                curDir.Delete(command.Arguments[0], false, true, true);
+                // curDir.Delete(command.Arguments[0], false, true, true);
 
-                return $"Directory {command.Arguments[0].BringToExternalForm()} deleted with subdirectories!";
+                return $"Directory {command.Arguments[0]} deleted with subdirectories!";
             }
 
             [Intercept]
             public string DeleteDirectory(VfsCommand command)
             {
-                var dir = GetUserDir(command.UserName);
+                ValidateArguments(command.Arguments, 1);
+
+                var dir = GetDir(command);
 
                 if (dir == command.Arguments[0])
                 {
@@ -175,39 +168,31 @@ namespace Emroy.Vfs.Service.Impl
 
                 var curDir = GetCurDir(command);
 
-                curDir.Delete(command.Arguments[0], false, false, true);
+                // curDir.Delete(command.Arguments[0], false, false, true);
 
-                return $"Directory {command.Arguments[0].BringToExternalForm()} deleted!";
+                return $"Directory {command.Arguments[0]} deleted!";
             }
 
-         
+
 
             [Intercept]
             public string Lock(VfsCommand command)
             {
+                ValidateArguments(command.Arguments, 1);
 
-                string dir = GetUserDir(command.UserName);
-                var file = _system.CreateFile(dir + command.Arguments[0], VfsFileMode.Open);
-                file.Lock(command.UserName, true);
+                var path = GetDir(command);
+                VfsDirectory.Root.LockFile(path, command.UserName, true);
+
                 return $"File {command.Arguments[0]} locked!";
             }
 
-            private static string GetUserDir(string userName)
-            {
-                string dir;
-                lock (_users)
-                {
-                    dir = _users.Single(f => f.Name == userName).CurDir;
-                }
-                return dir;
-            }
             [Intercept]
             public string UnLock(VfsCommand command)
             {
+                ValidateArguments(command.Arguments, 1);
 
-                var dir = GetUserDir(command.UserName);
-                var file = _system.CreateFile(dir + command.Arguments[0], VfsFileMode.Open);
-                file.Lock(command.UserName, false);
+                var path = GetDir(command);
+                VfsDirectory.Root.LockFile(path, command.UserName, false);
 
                 return $"File {command.Arguments[0]} unlocked!";
             }
@@ -215,13 +200,51 @@ namespace Emroy.Vfs.Service.Impl
             [Intercept]
             public string DeleteFile(VfsCommand command)
             {
-                var dir = GetCurDir(command);
-
-                dir.Delete(command.Arguments[0], false, false, false);
+                // var dir = GetCurDir(command);
+                ValidateArguments(command.Arguments, 1);
+                var dir = GetDir(command);
+                VfsDirectory.Root.DeleteFile(dir + VfsDirectory.Separator + command.Arguments[0]);
+                // dir.Delete(command.Arguments[0], false, false, false);
 
                 return $"File {command.Arguments[0]} deleted!";
 
             }
+
+            private static string GetDir(VfsCommand command)
+            {
+                string dir;
+                lock (_users)
+                {
+                    dir = _users.Single(f => f.Name == command.UserName).CurDir;
+                }
+                if (command.Arguments[0].StartsWith(VfsDirectory.DiskRoot + VfsDirectory.Separator))
+                {
+                    command.Arguments[0] = command.Arguments[0].TrimStart((VfsDirectory.DiskRoot + VfsDirectory.Separator).ToCharArray());
+                }
+                if (dir == VfsDirectory.DiskRoot)
+                {
+                    return command.Arguments[0];
+                }
+                return dir + VfsDirectory.Separator + command.Arguments[0];
+            }
+
+            private static void GetDir(VfsCommand command, out string srcDir, out string destDir)
+            {
+                string dir;
+                lock (_users)
+                {
+                    dir = _users.Single(f => f.Name == command.UserName).CurDir;
+                }
+                if (dir == VfsDirectory.DiskRoot)
+                {
+                    srcDir = command.Arguments[0];
+                    destDir = command.Arguments[1];
+                    return;
+                }
+                srcDir = dir + VfsDirectory.Separator + command.Arguments[0];
+                destDir = dir + VfsDirectory.Separator + command.Arguments[1];
+            }
+
 
             #region Helper methods
 
@@ -231,30 +254,39 @@ namespace Emroy.Vfs.Service.Impl
 
                 destPath = command.Arguments[1];
 
-                if (!command.Arguments[0].StartsWith(VfsSystem.DiskRoot))
+                if (!command.Arguments[0].StartsWith(VfsDirectory.DiskRoot))
                 {
                     srcPath = dir + command.Arguments[0];
                 }
-                if (!command.Arguments[1].StartsWith(VfsSystem.DiskRoot))
+                if (!command.Arguments[1].StartsWith(VfsDirectory.DiskRoot))
                 {
                     destPath = dir + command.Arguments[1];
                 }
             }
 
 
-            private static IDirectory GetCurDir(VfsCommand command)
+            private static IVfsDirectory GetCurDir(VfsCommand command)
             {
 
-                if (!command.Arguments[0].StartsWith(VfsSystem.DiskRoot))
-                {  //if relative path
+                if (!command.Arguments[0].StartsWith(VfsDirectory.DiskRoot))
+                {
+                    //if relative path
 
-                    var dir = GetUserDir(command.UserName);
-                    {
-                        return _system.FindDirectory(dir);
-                    }
+                    var dir = GetDir(command);
+
+                    VfsDirectory.Root.TraverseSubdirs(command.Arguments[0]);
+
                 }
                 command.Arguments[0] = command.Arguments[0].Substring(1);
-                return _system.Root;
+                return null;
+            }
+
+            private void ValidateArguments(string[] commandArguments, int count)
+            {
+                if (commandArguments.Length != count)
+                {
+                    throw new VfsException($"Wrong number of arguments: expected {count}, got {commandArguments.Length}");
+                }
             }
 
             #endregion
@@ -264,36 +296,47 @@ namespace Emroy.Vfs.Service.Impl
         [Intercept]
         public Response Connect(string userName)
         {
+
+
             lock (_users)
             {
                 if (_users.Any(f => f.Name == userName))
                 {
-                    return new Response { Message = "User already exists!", Fail = true };
+                    return new Response {Message = "User already exists!", Fail = true};
                 }
                 var user = new VfsUser
                 {
-                    CurDir = "/",
+                    Sid = OperationContext.Current.SessionId,
+                    CurDir = VfsDirectory.DiskRoot,
                     Name = userName,
                     Callback = OperationContext.Current.GetCallbackChannel<IVfsServiceCallback>()
                 };
 
                 _users.Add(user);
+                OperationContext.Current.Channel.Faulted += Channel_Faulted;
 
             }
 
-            return new Response { Message = $"You [{userName}] are connected now!", Fail = false };
+            return new Response {Message = $"You [{userName}] are connected now!", Fail = false};
+        }
 
+        private void Channel_Faulted(object sender, EventArgs e)
+        {
+            lock (_users)
+            {
+
+                _users.RemoveAll(f => f.Sid == OperationContext.Current.SessionId);
+
+            }
         }
 
         [Intercept]
         public Response PerformCommand(VfsCommand command)
         {
             Func<VfsCommand, string> action;
-            if (_cmdFuncs.TryGetValue(command.Type, out  action))
+            if (_cmdFuncs.TryGetValue(command.Type, out action))
             {
-                //normalize to internal form
-                command.Arguments = command.Arguments.Select(f => f.BringToInternalForm())
-                    .ToArray();
+
 
                 VfsUser user;
                 lock (_users)
@@ -305,7 +348,8 @@ namespace Emroy.Vfs.Service.Impl
                         {
                             Message = $"Internal error. User {command.UserName} is not registerd in VFS service!",
                             Fail = true
-                        }; ;
+                        };
+                        ;
                     }
                 }
 
@@ -320,10 +364,11 @@ namespace Emroy.Vfs.Service.Impl
                     resp.Fail = true;
                 }
 
-                _users.ToList().ForEach(u =>
-                    u.Callback.Feedback(user.Name, $"User {user.Name} performs command:" +
-                                                   $" {command.Type} {string.Join(" ", command.Arguments)}"
-                ));
+                _users.ToList()
+                    .ForEach(u =>
+                        u.Callback.Feedback(user.Name, $"User {user.Name} performs command:" +
+                                                       $" {command.Type} {string.Join(" ", command.Arguments)}"
+                        ));
                 return resp;
             }
 
@@ -344,12 +389,10 @@ namespace Emroy.Vfs.Service.Impl
 
             }
 
-            return new Response { Message = $"You [{userName}] are disconnected now !", Fail = false };
+            return new Response {Message = $"You [{userName}] are disconnected now !", Fail = false};
         }
 
-  
+
+
     }
-
-
 }
-*/

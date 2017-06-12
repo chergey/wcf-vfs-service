@@ -13,7 +13,7 @@ namespace Emroy.Vfs.Tests
     [TestClass]
     public class StorageTestsNew
     {
-        readonly Directory _root = VfsSystem.Root;
+        readonly VfsDirectory _root = VfsDirectory.Root;
 
         [TestInitialize]
         public void SetUp()
@@ -27,7 +27,7 @@ namespace Emroy.Vfs.Tests
 
 
             var directory = _root.CreateSubDirectory("dir1");
-            directory.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            directory.CreateFile("file2.txt");
 
             Assert.IsTrue(directory.Contains("file2.txt"));
             Assert.IsTrue(_root.Contains("dir1"));
@@ -38,12 +38,12 @@ namespace Emroy.Vfs.Tests
         {
 
             var dir1 = _root.CreateSubDirectory("dir1");
-            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            dir1.CreateFile("file2.txt");
 
-            _root.CreateFile("dir1/file22.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("dir1\\file22.txt");
 
-            var dir2 = _root.CreateSubDirectory("dir1/dir2");
-            _root.CreateFile("dir1/dir2/file3.txt", VfsFileMode.CreateNew);
+            var dir2 = _root.CreateSubDirectory("dir1\\dir2");
+            _root.CreateFile("dir1\\dir2\\file3.txt");
             Assert.IsTrue(dir1.Contains("file22.txt"));
 
             Assert.IsTrue(dir1.Contains("file22.txt"));
@@ -55,17 +55,17 @@ namespace Emroy.Vfs.Tests
         public void TestCopyDirectory()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
-            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            dir1.CreateFile("file2.txt");
 
-            _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("file1.txt");
+            _root.CreateFile("file123.txt");
+            _root.CreateFile("file1234.txt");
+            _root.CreateFile("file12345.txt");
+            _root.CreateFile("file123456.txt");
 
-            _root.CreateFile("dir1/file22.txt", VfsFileMode.CreateNew);
+            _root.CreateFile("dir1\\file22.txt");
 
-            _root.CreateSubDirectory("dir1/dir2");
+            _root.CreateSubDirectory("dir1\\dir2");
             Assert.IsTrue(dir1.Contains("file22.txt"));
 
 
@@ -74,8 +74,8 @@ namespace Emroy.Vfs.Tests
             var dir12 = _root.CreateSubDirectory("dir12");
 
             dir12.CreateSubDirectory("dir22");
-            _root.CreateFile("dir12/dir22/file31.txt", VfsFileMode.CreateNew);
-            _root.CopyEntity("dir1", "dir11/dir23");
+            _root.CreateFile("dir12\\dir22\\file31.txt");
+            _root.CopyEntity("dir1", "dir11\\dir23");
 
 
 
@@ -83,8 +83,8 @@ namespace Emroy.Vfs.Tests
             Assert.IsTrue(dir23.Parent.Name == "dir11");
 
 
-            // _root.CopyEntity("dir1/file22.txt", "dir12/dir22/file31.txt");
-            //  _root.CopyEntity("dir1/file22.txt", "dir12/dir22/file22.txt");
+         //  _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt");
+         //    _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file22.txt");
 
         }
 
@@ -92,13 +92,13 @@ namespace Emroy.Vfs.Tests
         public void TestLock()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
-            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            dir1.CreateFile("file2.txt");
 
-            var file1 = _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
+            var file1 = _root.CreateFile("file1.txt");
+            _root.CreateFile("file123.txt");
+            _root.CreateFile("file1234.txt");
+            _root.CreateFile("file12345.txt");
+            _root.CreateFile("file123456.txt");
 
 
             file1.LockFile("Antonio");
@@ -112,14 +112,16 @@ namespace Emroy.Vfs.Tests
         public void TestMove()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
-            dir1.CreateFile("file2.txt", VfsFileMode.CreateNew);
+            dir1.CreateFile("file2.txt");
 
-            var file1 = _root.CreateFile("file1.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file1234.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file12345.txt", VfsFileMode.CreateNew);
-            _root.CreateFile("file123456.txt", VfsFileMode.CreateNew);
+            var file1 = _root.CreateFile("file1.txt");
+            _root.CreateFile("file123.txt");
+            _root.CreateFile("file1234.txt");
+            _root.CreateFile("file12345.txt");
+            _root.CreateFile("file123456.txt");
             _root.MoveEntity("file123456.txt", "dir1");
+
+            var a=_root.GetContents("");
             Assert.IsFalse(_root.Contains("file123456.txt"));
 
         }

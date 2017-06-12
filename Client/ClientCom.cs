@@ -15,7 +15,10 @@ namespace Emroy.Vfs.Client
 
     public class ClientCom : IClientCom
     {
-        private const string ServiceUrl = "http://localhost:9099";
+        /// <summary>
+        /// service uri for debug (to avoid typing it every time)
+        /// </summary>
+        private const string ServiceUriDefault = "http://localhost:9099";
 
         private DuplexChannelFactory<IVfsService> _channelFactory;
 
@@ -60,6 +63,11 @@ namespace Emroy.Vfs.Client
                     {
                         PrintHelp();
                         continue;
+                    }
+
+                    if (string.Equals(inputCommand[1], "test", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        inputCommand[1] = ServiceUriDefault;
                     }
                     if (connected)
                     {
@@ -109,10 +117,10 @@ namespace Emroy.Vfs.Client
                             Console.WriteLine("You are not connected.");
                             continue;
                         }
-                       
+
                         try
                         {
-                            Response response= _service.PerformCommand(new VfsCommand
+                            Response response = _service.PerformCommand(new VfsCommand
                             {
                                 Type = type,
                                 UserName = _userName,
@@ -130,7 +138,7 @@ namespace Emroy.Vfs.Client
                             Console.WriteLine("Protocol error: " + ex.Message);
                             break;
                         }
-                        
+
 
                     }
 
@@ -196,7 +204,7 @@ namespace Emroy.Vfs.Client
         {
             try
             {
-                var endpointAddress = new EndpointAddress(ServiceUrl); //serviceUrl
+                var endpointAddress = new EndpointAddress(ServiceUriDefault); //serviceUrl
                 var instanceContext = new InstanceContext(new VfsServiceCallback());
                 var binding = new WSDualHttpBinding
                 {
