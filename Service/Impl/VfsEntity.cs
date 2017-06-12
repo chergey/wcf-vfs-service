@@ -21,6 +21,9 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         public VfsDirectory Parent;
 
+
+   
+
         /// <summary>
         /// List of parents beginning with the highest
         /// </summary>

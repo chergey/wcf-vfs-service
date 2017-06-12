@@ -16,7 +16,8 @@ namespace Emroy.Vfs.Service.Impl
 
     public class VfsDirectory : VfsEntity, IVfsDirectory
     {
-
+        #region VFS constants
+   
         /// <summary>
         /// VFS path separator
         /// </summary>
@@ -32,13 +33,15 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         public const string DiskRoot = "c:";
 
+        #endregion
+
 
         /// <summary>
         /// Parent directory for all items
         /// </summary>
         public static VfsDirectory Root = new VfsDirectory(DiskRoot);
 
-        private List<VfsEntity> _entities = new List<VfsEntity>();
+        private readonly List<VfsEntity> _entities = new List<VfsEntity>();
 
         public VfsDirectory(string name)
         {
@@ -362,8 +365,12 @@ namespace Emroy.Vfs.Service.Impl
             {
                 throw new VfsException("Can't move or delete directories with locked files!");
             }
+            var dirs = _entities.Where(f => f is VfsDirectory).Cast<VfsDirectory>().Where(f => f._entities.Any());
 
-
+            foreach (var dir in dirs)
+            {
+                dir.CheckRestrictionsLock();
+            }
         }
 
 

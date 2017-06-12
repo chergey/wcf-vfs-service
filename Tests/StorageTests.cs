@@ -90,24 +90,7 @@ namespace Emroy.Vfs.Tests
 
         }
 
-        [TestMethod]
-        public void TestLock()
-        {
-            var dir1 = _root.CreateSubDirectory("dir1");
-            dir1.CreateFile("file2.txt");
-
-            var file1 = _root.CreateFile("file1.txt");
-            _root.CreateFile("file123.txt");
-            _root.CreateFile("file1234.txt");
-            _root.CreateFile("file12345.txt");
-            _root.CreateFile("file123456.txt");
-
-
-            file1.LockFile("Antonio");
-            file1.UnLockFile("Antonio");
-            _root.DeleteFile("file1.txt");
-
-        }
+      
 
 
         [TestMethod]
@@ -150,6 +133,57 @@ namespace Emroy.Vfs.Tests
             dir2.CreateSubDirectory("dir3");
             _root.DeleteSubDirectory("dir1", true);
 
+        }
+        [TestMethod]
+        public void TestLockedFile()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            dir1.CreateFile("file2.txt");
+
+            var file1 = _root.CreateFile("file1.txt");
+            _root.CreateFile("file123.txt");
+            _root.CreateFile("file1234.txt");
+            _root.CreateFile("file12345.txt");
+            _root.CreateFile("file123456.txt");
+            file1.LockFile("Antonio");
+
+            try
+            {
+                _root.DeleteFile("file1.txt");
+            }
+            catch (VfsException)
+            {
+                return;
+            }
+            Assert.Fail("Locked file got deleted!");
+
+
+        }
+
+        [TestMethod]
+        public void TestLockedFileInDirectory()
+        {
+            var dir1 = _root.CreateSubDirectory("dir1");
+            var dir2 = dir1.CreateSubDirectory("dir2");
+             dir2.CreateFile("file3.txt");
+            _root.LockFile("dir1\\dir2\\file3.txt", "default", true);
+            dir2.CreateSubDirectory("dir3");
+           
+            try
+            {
+                _root.DeleteSubDirectory("dir1", true);
+            }
+            catch (VfsException)
+            {
+                return;
+            }
+            Assert.Fail("Locked file got deleted!");
+
+        }
+
+        public void TearDown()
+        {
+           // _root 
         }
 
     }
