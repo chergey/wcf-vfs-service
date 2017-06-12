@@ -1,13 +1,44 @@
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Emroy.Vfs.Service.Impl
 {
-    [DebuggerDisplay("Name={" + nameof(Name) + "}, Parent = {" + nameof (Parent) + "}")]
+    /// <summary>
+    /// Base class for all objects in the file system
+    /// </summary>
+    [DebuggerDisplay("Name={" + nameof(Name) + "}")]
     public abstract class VfsEntity
     {
+
+        /// <summary>
+        /// Entity name
+        /// </summary>
         public string Name;
 
+        /// <summary>
+        /// Directory where entity is located
+        /// </summary>
         public VfsDirectory Parent;
+
+        /// <summary>
+        /// List of parents beginning with the highest
+        /// </summary>
+        public List<VfsDirectory> Parents
+        {
+            get
+            {
+                var list = new List<VfsDirectory>();
+                var p = Parent;
+                while (p != null)
+                {
+                    list.Add(p);
+                    p = p.Parent;
+                }
+                list.Reverse();
+                return list;
+            }
+        }
 
     }
 }

@@ -8,7 +8,9 @@ using Emroy.Vfs.Service.Interfaces;
 
 namespace Emroy.Vfs.Service.Impl
 {
-
+    /// <summary>
+    /// Vfs file implementation
+    /// </summary>
     public class VfsFile : VfsEntity, IVfsFile
     {
         public VfsFile(string name)

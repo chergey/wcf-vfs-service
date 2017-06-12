@@ -204,13 +204,13 @@ namespace Emroy.Vfs.Client
         {
             try
             {
-                var endpointAddress = new EndpointAddress(ServiceUriDefault); //serviceUrl
+                var endpointAddress = new EndpointAddress(serviceUrl); 
                 var instanceContext = new InstanceContext(new VfsServiceCallback());
                 var binding = new WSDualHttpBinding
                 {
-                    SendTimeout = TimeSpan.FromSeconds(50),
-                    ReceiveTimeout = TimeSpan.FromSeconds(50),
-                    CloseTimeout = TimeSpan.FromSeconds(50),
+                    SendTimeout = TimeSpan.FromSeconds(150),
+                    ReceiveTimeout = TimeSpan.FromSeconds(150),
+                    CloseTimeout = TimeSpan.FromSeconds(150),
                     OpenTimeout = TimeSpan.FromSeconds(1000),
 
                     MaxReceivedMessageSize = int.MaxValue,

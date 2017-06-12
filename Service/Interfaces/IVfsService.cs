@@ -32,7 +32,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// </summary>
         /// <param name="userName">user name to disconnect</param>
         /// <returns>response <see cref="Response"/></returns>
-        [OperationContract(IsInitiating = false)]
+        [OperationContract(IsTerminating = true, IsInitiating = false)]
         Response Disconnect(string userName);
 
 

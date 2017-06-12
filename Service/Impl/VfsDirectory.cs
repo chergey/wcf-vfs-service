@@ -10,7 +10,9 @@ using Emroy.Vfs.Service.Interfaces;
 
 namespace Emroy.Vfs.Service.Impl
 {
-
+    /// <summary>
+    /// Vfs main interface implementation
+    /// </summary>
     
     public class VfsDirectory : VfsEntity, IVfsDirectory
     {
@@ -26,12 +28,14 @@ namespace Emroy.Vfs.Service.Impl
         public static char SeparatorChar => Separator.ToCharArray()[0];
 
         /// <summary>
-        /// VFS root
+        /// VFS root name
         /// </summary>
         public const string DiskRoot = "c:";
 
    
-
+        /// <summary>
+        /// Parent directory for all items
+        /// </summary>
         public static VfsDirectory Root = new VfsDirectory(DiskRoot);
 
         private List<VfsEntity> _entities = new List<VfsEntity>();
@@ -48,9 +52,9 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        public VfsFile CreateFile(string path)
+        public IVfsFile CreateFile(string path)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
                 return dir.CreateFile(newPath);
@@ -65,14 +69,9 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-        /// <summary>
-        /// Creates subdir
-        /// </summary>
-        /// <param name="path">name or path (relative to the root)</param>
-        /// <returns></returns>
-        public VfsDirectory CreateSubDirectory(string path)
+        public IVfsDirectory CreateSubDirectory(string path)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
                 return dir.CreateSubDirectory(newPath);
@@ -84,33 +83,35 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        /// <summary>
-        /// Deletes subdir
-        /// </summary>
-        /// <param name="path">name or path (relative to the root)</param>
-        public void DeleteSubDirectory(string path)
+
+        public void DeleteSubDirectory(string path, bool canDeleteSubDir)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
-                dir.DeleteSubDirectory(newPath);
+                dir.DeleteSubDirectory(newPath, canDeleteSubDir);
             }
-            AssertDeleteDir(path);
+            var dir1 = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
+            if (dir1 == null)
+            {
+                throw new VfsException($"Directory {path} does not exist!");
+            }
+            if (!canDeleteSubDir)
+            {
+                dir1.CheckRestrictionsSubDir();
+            }
             _entities.RemoveAll(f => f.Name == path);
         }
 
 
 
-        /// <summary>
-        /// Deletes file
-        /// </summary>
-        /// <param name="path">name or path (relative to the root)</param>
+    
         public void DeleteFile(string path)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
-                dir.DeleteSubDirectory(newPath);
+                dir.DeleteFile(newPath);
             }
             AssertDeleteFile(path);
             _entities.RemoveAll(f => f.Name == path);
@@ -118,14 +119,10 @@ namespace Emroy.Vfs.Service.Impl
 
       
 
-        /// <summary>
-        /// Moves file or directory
-        /// </summary>
-        /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
-        /// <param name="destPath">name or path (relative to the root) to the destination directory</param>
+
         public void MoveEntity(string srcPath, string destPath)
         {
-            if (srcPath.Contains(VfsDirectory.SeparatorChar))
+            if (srcPath.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(srcPath, out string newPath);
                 dir.CopyEntity(newPath, destPath);
@@ -156,14 +153,10 @@ namespace Emroy.Vfs.Service.Impl
 
         }
 
-        /// <summary>
-        /// Copies file or directory
-        /// </summary>
-        /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
-        /// <param name="destPath">name or path (relative to the root) to the destination directory</param>
+
         public void CopyEntity(string srcPath, string destPath)
         {
-            if (srcPath.Contains(VfsDirectory.SeparatorChar))
+            if (srcPath.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(srcPath, out string newPath);
                 dir.CopyEntity(newPath, destPath);
@@ -175,16 +168,15 @@ namespace Emroy.Vfs.Service.Impl
             {
                 throw new VfsException($"Object {srcPath} does not exist!");
             }
-            // destination
 
-            Root.CopyEntity(obj, destPath, destPath.Count(f => f == VfsDirectory.SeparatorChar) + 1);
+            Root.CopyEntity(obj, destPath, destPath.Count(f => f == SeparatorChar) + 1);
 
 
         }
 
         public VfsEntity TraverseSubdirs(string path)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
                 return dir.TraverseSubdirs(newPath);
@@ -197,21 +189,15 @@ namespace Emroy.Vfs.Service.Impl
             return obj;
         }
 
-        /// <summary>
-        /// Retrieves subdirectory in the current directory
-        /// </summary>
-        /// <param name="path">path of file or directory (relative to the current directory)</param>
-        /// <param name="newPath">path of file or directory (relative to the returned directory)</param>
-        /// <param name="skip"></param>
-        /// <returns></returns>
-        public VfsDirectory FindSubDir(string path, out string newPath, int skip = 1)
+     
+        public IVfsDirectory FindSubDir(string path, out string newPath, int skip = 1)
         {
 
-            var dirs = path.Split(VfsDirectory.SeparatorChar);
+            var dirs = path.Split(SeparatorChar);
             var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]);
             AssertDirIsNull(dirs[0], dir);
-            newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) => cur + VfsDirectory.Separator + s).Substring(VfsDirectory.Separator.Length);
-            return dir as VfsDirectory;
+            newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) => cur + Separator + s).Substring(VfsDirectory.Separator.Length);
+            return dir as IVfsDirectory;
 
 
         }
@@ -225,7 +211,7 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (depth > 0)
             {
-                var dir = FindSubDir(destPath, out string newPath, depth == 1 ? 0 : 1);
+                var dir = FindSubDir(destPath, out string newPath, depth == 1 ? 0 : 1) as VfsDirectory;
                 dir.CopyEntity(entity, newPath, depth - 1);
                 return;
             }
@@ -236,32 +222,42 @@ namespace Emroy.Vfs.Service.Impl
                 throw new VfsException($"Object {destPath} already exists!");
             }
             var obj = entity.Copy();
-            entity.Parent = this;
+            obj.Parent = this;
             _entities.Add(obj);
 
         }
-
-        public List<string> GetContents(string path)
+        /// <summary>
+        /// Returns directory contents
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns>list of tuple directory name, list of locking users </returns>
+        public List<(string, List<string>)> GetContents(string path)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
-                dir.CopyEntity(newPath, path);
-                return GetContents(newPath);
+                return dir.GetContents(newPath);
             }
-            var contents = new List<string>();
-            contents.AddRange(_entities.Where(f => f is VfsFile).Select(f => f.Parent.Name + VfsDirectory.Separator + f.Name));
-            foreach (var en in _entities.Where(f => f is VfsDirectory).Cast<VfsDirectory>())
+            var contents = new List<(string, List<string>)>();
+
+
+                
+            contents.AddRange(_entities.OrderBy(f => f.Name)
+                    .Select(f => (string.Join("\\", f.Parents
+                                      .Select(p => p.Name)) + Separator + f.Name, f is VfsFile file ? file.Locks : new List<string>()))
+                                      );
+            foreach (var en in _entities.OrderBy(f => f.Name).Where(f => f is VfsDirectory).Cast<VfsDirectory>())
             {
-                contents.AddRange(en.GetContents(en.Name));
+                contents.AddRange( en.GetContents( en.Name));
             }
             return contents;
         }
 
 
+
         public void LockFile(string path, string label, bool value)
         {
-            if (path.Contains(VfsDirectory.SeparatorChar))
+            if (path.Contains(SeparatorChar))
             {
                 var dir = FindSubDir(path, out string newPath);
                 dir.LockFile(newPath, label, value);
@@ -307,20 +303,6 @@ namespace Emroy.Vfs.Service.Impl
             }
         }
 
-        /// <summary>
-        /// Throws if directory can't be deleted
-        /// </summary>
-        /// <param name="path"></param>
-        private void AssertDeleteDir(string path)
-        {
-            var dir = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
-            if (dir == null)
-            {
-                throw new VfsException($"Directory {path} does not exist!");
-            }
-            dir.CheckRestrictionsSubDir();
-
-        }
 
         /// <summary>
         /// Throws if file can't be deleted

@@ -51,6 +51,8 @@ namespace Emroy.Vfs.Tests
 
             Assert.IsTrue(dir2.Contains("file3.txt"), "dir2 does not contain file3");
         }
+
+
         [TestMethod]
         public void TestCopyDirectory()
         {
@@ -80,11 +82,12 @@ namespace Emroy.Vfs.Tests
 
 
             Assert.IsTrue(dir23.Contains("dir1"));
-            Assert.IsTrue(dir23.Parent.Name == "dir11");
+            Assert.IsTrue((dir23 as VfsEntity).Parent.Name == "dir11");
 
+            var a = _root.GetContents("");
 
-         //  _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt");
-         //    _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file22.txt");
+            //  _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt");
+            //    _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file22.txt");
 
         }
 
