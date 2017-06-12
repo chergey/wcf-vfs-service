@@ -18,7 +18,7 @@ namespace Emroy.Vfs.Client
         /// <summary>
         /// service uri for debug (to avoid typing it every time)
         /// </summary>
-        private const string ServiceUriDefault = "http://localhost:9099";
+        private const string ServiceUriDefault = "net.tcp://localhost:9099";
 
         private DuplexChannelFactory<IVfsService> _channelFactory;
 
@@ -82,7 +82,6 @@ namespace Emroy.Vfs.Client
                         continue;
                     }
                     VfsServiceCallback.NotificationEvent += VfsServiceCallback_NotificationEvent;
-                    //User.Name = inputCommand[2];
                     _userName = inputCommand[2];
                     var response = _service.Connect(_userName);
                     Console.WriteLine(response.Message);
@@ -206,7 +205,7 @@ namespace Emroy.Vfs.Client
             {
                 var endpointAddress = new EndpointAddress(serviceUrl); 
                 var instanceContext = new InstanceContext(new VfsServiceCallback());
-                var binding = new WSDualHttpBinding
+                var binding = new NetTcpBinding
                 {
                     SendTimeout = TimeSpan.FromSeconds(150),
                     ReceiveTimeout = TimeSpan.FromSeconds(150),
@@ -238,7 +237,7 @@ namespace Emroy.Vfs.Client
 
         public class VfsServiceCallback : IVfsServiceCallback
         {
-            public static event ClientCom.NotificationHandler NotificationEvent;
+            public static event NotificationHandler NotificationEvent;
 
             public void Feedback(string login, string message)
             {

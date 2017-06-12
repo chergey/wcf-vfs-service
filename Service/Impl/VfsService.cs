@@ -8,7 +8,7 @@ using Emroy.Vfs.Service.Dto;
 using Emroy.Vfs.Service.Enums;
 using Emroy.Vfs.Service.Interfaces;
 
-using KingAOP;
+using NConcern;
 using Ninject;
 using NLog;
 
@@ -46,7 +46,11 @@ namespace Emroy.Vfs.Service.Impl
         public static Logger AppLogger = LogManager.GetCurrentClassLogger();
 
 
-
+        public VfsService()
+        {
+            //add logging
+            Aspect.Weave<Injector>(typeof(VfsService));
+        }
         public static void DebugInfo(string info)
         {
             Console.WriteLine(info);
@@ -77,7 +81,7 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-            [Intercept]
+           
             public string CreateDir(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -87,7 +91,7 @@ namespace Emroy.Vfs.Service.Impl
                 return $"Directory {command.Arguments[0]} created!";
             }
 
-            [Intercept]
+           
 
             public string CreateFile(VfsCommand command)
             {
@@ -98,7 +102,15 @@ namespace Emroy.Vfs.Service.Impl
                     $"File {command.Arguments[0]} created!";
             }
 
-            [Intercept]
+            /// <summary>
+            /// Get directories structure in the form:
+            /// /
+            /// DIR1
+            ///   | DIR2
+            ///   |  | file1.txt
+            ///   |  | file2.txt [Locked by Me]
+            /// </summary>
+           
             public string Print(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 0);
@@ -114,7 +126,7 @@ namespace Emroy.Vfs.Service.Impl
 
             }
 
-            [Intercept]
+           
             public string Move(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 2);
@@ -129,7 +141,7 @@ namespace Emroy.Vfs.Service.Impl
                 return $"Object {command.Arguments[0]} moved to {command.Arguments[1]}";
             }
 
-            [Intercept]
+          
             public string Copy(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 2);
@@ -142,7 +154,7 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-            [Intercept]
+           
             public string DeleteTree(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -158,7 +170,7 @@ namespace Emroy.Vfs.Service.Impl
                 return $"Directory {command.Arguments[0]} deleted with subdirectories!";
             }
 
-            [Intercept]
+          
             public string DeleteDirectory(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -177,7 +189,7 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-            [Intercept]
+           
             public string Lock(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -188,7 +200,7 @@ namespace Emroy.Vfs.Service.Impl
                 return $"File {command.Arguments[0]} locked!";
             }
 
-            [Intercept]
+          
             public string UnLock(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -199,7 +211,7 @@ namespace Emroy.Vfs.Service.Impl
                 return $"File {command.Arguments[0]} unlocked!";
             }
 
-            [Intercept]
+         
             public string DeleteFile(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
@@ -273,7 +285,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        [Intercept]
+    
         public Response Connect(string userName)
         {
 
@@ -303,15 +315,16 @@ namespace Emroy.Vfs.Service.Impl
 
         private void Channel_Close(object sender, EventArgs e)
         {
+            var channel = sender as IContextChannel;
             lock (_users)
             {
 
-                _users.RemoveAll(f => f.Sid == OperationContext.Current.SessionId);
+                _users.RemoveAll(f => f.Sid == channel?.SessionId);
 
             }
         }
 
-        [Intercept]
+     
         public Response PerformCommand(VfsCommand command)
         {
             Func<VfsCommand, string> action;
@@ -360,7 +373,7 @@ namespace Emroy.Vfs.Service.Impl
             };
         }
 
-        [Intercept]
+      
         public Response Disconnect(string userName)
         {
             lock (_users)

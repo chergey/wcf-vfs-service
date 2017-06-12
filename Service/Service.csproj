@@ -61,17 +61,14 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="KingAOP, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\KingAOP.1.0.0\lib\KingAOP.dll</HintPath>
+    <Reference Include="NConcern, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7ec21d9f1f8dcaf9, processorArchitecture=MSIL">
+      <HintPath>..\packages\NConcern.4.1.0\lib\NConcern.dll</HintPath>
     </Reference>
     <Reference Include="Ninject, Version=4.0.0.0, Culture=neutral, PublicKeyToken=c7192dc5380945e7, processorArchitecture=MSIL">
       <HintPath>..\packages\Ninject.4.0.0-beta-0134\lib\net45\Ninject.dll</HintPath>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.10\lib\net40\NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.2.1.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <HintPath>..\packages\protobuf-net.2.2.1\lib\net40\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -92,10 +89,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Injector.cs" />
     <Compile Include="Interfaces\IVfsDirectory.cs" />
     <Compile Include="Interfaces\IVfsFile.cs" />
     <Compile Include="Impl\VfsEntity.cs" />
-    <Compile Include="InterceptAttribute.cs" />
     <Compile Include="Impl\VfsDirectory.cs" />
     <Compile Include="Impl\VfsFile.cs" />
     <Compile Include="Interfaces\IVfsService.cs" />
@@ -107,7 +104,6 @@
     <Compile Include="Dto\VfsCommand.cs" />
     <Compile Include="Enums\VfsCommandType.cs" />
     <Compile Include="VfsException.cs" />
-    <Compile Include="VfsSystem.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -136,7 +132,9 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Net.Compilers.2.3.0-beta1\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Net.Compilers.2.3.0-beta1\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('..\packages\CNeptune.1.2.1\build\CNeptune.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\CNeptune.1.2.1\build\CNeptune.targets'))" />
   </Target>
+  <Import Project="..\packages\CNeptune.1.2.1\build\CNeptune.targets" Condition="Exists('..\packages\CNeptune.1.2.1\build\CNeptune.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
