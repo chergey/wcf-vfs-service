@@ -49,13 +49,9 @@ namespace Emroy.Vfs.Service.Impl
         public VfsService()
         {
             //add logging
-            Aspect.Weave<Injector>(typeof(VfsService));
+           // Aspect.Weave<Injector>(typeof(VfsService));
         }
-        public static void DebugInfo(string info)
-        {
-            Console.WriteLine(info);
-            AppLogger.Info(info);
-        }
+
 
         /// <summary>
         /// Inner class for command processing
@@ -70,10 +66,10 @@ namespace Emroy.Vfs.Service.Impl
                 ValidateArguments(command.Arguments, 1);
 
                 var dir = command.Arguments[0];
-                if (dir.StartsWith(VfsDirectory.DiskRoot))
-                {
-                    dir = dir.TrimStart(VfsDirectory.DiskRoot.ToCharArray());
-                }
+              //  if (dir.StartsWith(VfsDirectory.DiskRoot))
+              //  {
+              //      dir = dir.TrimStart(VfsDirectory.DiskRoot.ToCharArray());
+              //  }
                 _users.Single(f => f.Name == command.UserName).CurDir = dir;
 
                 return $"Directory {command.Arguments[0]} saved!";
@@ -158,12 +154,13 @@ namespace Emroy.Vfs.Service.Impl
             public string DeleteTree(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
-                var dir = GetDir(command);
-
-                if (dir == command.Arguments[0])
+                if (GetCurDir(command.UserName) == command.Arguments[0])
                 {
                     throw new VfsException("Deleting current dir is not allowed!");
                 }
+
+                var dir = GetDir(command);
+
                 VfsDirectory.Root.DeleteSubDirectory(dir, true);
 
 
@@ -174,13 +171,12 @@ namespace Emroy.Vfs.Service.Impl
             public string DeleteDirectory(VfsCommand command)
             {
                 ValidateArguments(command.Arguments, 1);
-
-                var dir = GetDir(command);
-
-                if (dir == command.Arguments[0])
+                if (GetCurDir(command.UserName)==command.Arguments[0])
                 {
                     throw new VfsException("Deleting current dir is not allowed!");
                 }
+
+                var dir = GetDir(command);
 
                 VfsDirectory.Root.DeleteSubDirectory(dir, false);
 
@@ -222,6 +218,16 @@ namespace Emroy.Vfs.Service.Impl
 
             }
 
+            public static string GetCurDir(string userName)
+            {
+                string dir;
+                lock (_users)
+                {
+                    dir = _users.Single(f => f.Name == userName).CurDir;
+                }
+                return dir;
+            }
+
             private static string GetDir(VfsCommand command)
             {
                 // if full path
@@ -230,11 +236,7 @@ namespace Emroy.Vfs.Service.Impl
                     return command.Arguments[0].TrimStart((VfsDirectory.DiskRoot + VfsDirectory.Separator).ToCharArray());
 
                 }
-                string dir;
-                lock (_users)
-                {
-                    dir = _users.Single(f => f.Name == command.UserName).CurDir;
-                }
+                string dir = GetCurDir(command.UserName);
 
                 if (dir == VfsDirectory.DiskRoot)
                 {
@@ -254,11 +256,8 @@ namespace Emroy.Vfs.Service.Impl
                     return;
                 }
 
-                string dir;
-                lock (_users)
-                {
-                    dir = _users.Single(f => f.Name == command.UserName).CurDir;
-                }
+                string dir = GetCurDir(command.UserName);
+
                 if (dir == VfsDirectory.DiskRoot)
                 {
                     srcDir = command.Arguments[0];
@@ -385,8 +384,5 @@ namespace Emroy.Vfs.Service.Impl
 
             return new Response { Message = $"You [{userName}] are disconnected now !", Fail = false };
         }
-
-
-
     }
 }

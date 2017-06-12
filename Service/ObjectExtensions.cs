@@ -14,6 +14,10 @@ namespace Emroy.Vfs.Service
     {
         private static readonly MethodInfo CloneMethod = typeof(object).GetMethod("MemberwiseClone", BindingFlags.NonPublic | BindingFlags.Instance);
 
+        public static T Copy<T>(this T original)
+        {
+            return (T)Copy((object)original);
+        }
         public static bool IsPrimitive(this Type type)
         {
             if (type == typeof(string)) return true;
@@ -68,10 +72,7 @@ namespace Emroy.Vfs.Service
                 fieldInfo.SetValue(cloneObject, clonedFieldValue);
             }
         }
-        public static T Copy<T>(this T original)
-        {
-            return (T)Copy((object)original);
-        }
+    
     }
 
     public class ReferenceEqualityComparer : EqualityComparer<object>

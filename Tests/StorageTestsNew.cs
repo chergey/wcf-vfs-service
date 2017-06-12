@@ -80,7 +80,6 @@ namespace Emroy.Vfs.Tests
             _root.CopyEntity("dir1", "dir11\\dir23");
 
 
-
             Assert.IsTrue(dir23.Contains("dir1"));
             Assert.IsTrue((dir23 as VfsEntity).Parent.Name == "dir11");
 

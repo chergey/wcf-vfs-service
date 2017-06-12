@@ -215,7 +215,7 @@ namespace Emroy.Vfs.Service.Impl
                 dir.CopyEntity(entity, newPath, depth - 1);
                 return;
             }
-            var destObj = _entities.FirstOrDefault(f => f.Name == destPath);
+            var destObj = _entities.FirstOrDefault(f => f.Name == entity.Name);
 
             if (destObj != null)
             {
@@ -240,8 +240,6 @@ namespace Emroy.Vfs.Service.Impl
             }
             var contents = new List<(string, List<string>)>();
 
-
-                
             contents.AddRange(_entities.OrderBy(f => f.Name)
                     .Select(f => (string.Join("\\", f.Parents
                                       .Select(p => p.Name)) + Separator + f.Name, f is VfsFile file ? file.Locks : new List<string>()))
