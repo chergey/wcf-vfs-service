@@ -35,8 +35,6 @@ namespace Emroy.Vfs.Service.Impl
 
         #endregion
 
-        private object _lockobj=new object();
-
         /// <summary>
         /// Parent directory for all items
         /// </summary>
@@ -51,8 +49,20 @@ namespace Emroy.Vfs.Service.Impl
 
         public bool Contains(string name)
         {
-            var entity = _entities.FirstOrDefault(f => f.Name == name);
-            return entity != null;
+            return GetEntity(name,false);
+        }
+
+        private VfsEntity GetEntity(string name, bool needThrow)
+        {
+            lock (_entities)
+            {
+                var entity = _entities.FirstOrDefault(f => f.Name == name);
+                if (needThrow && entity == null)
+                {
+                    throw new VfsException($"Object {name} does not exist!");
+                }
+                return entity;
+            }
         }
 
 
@@ -103,8 +113,8 @@ namespace Emroy.Vfs.Service.Impl
             }
             lock (_entities)
             {
-                var dir1 = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
-                if (dir1 == null)
+                var subdir = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
+                if (subdir == null)
                 {
                     throw new VfsException($"Directory {path} does not exist!");
                 }
@@ -112,11 +122,11 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     if (_entities.Any(f => f is VfsDirectory))
                     {
-                        throw new VfsException("Can't delete directories with subdirectories!");
+                        throw new VfsException($"Can't delete directory {path} as it contains subdirectories!");
                     }
                 }
 
-                dir1.CheckRestrictionsLock();
+                subdir.CheckRestrictionsLock();
                 _entities.RemoveAll(f => f.Name == path);
             }
         }
@@ -189,12 +199,7 @@ namespace Emroy.Vfs.Service.Impl
 
             lock (_entities)
             {
-                var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
-                if (obj == null)
-                {
-                    throw new VfsException($"Object {srcPath} does not exist!");
-                }
-
+                var obj = GetEntity(srcPath, true);
                 Root.CopyEntity(obj, destPath, destPath.Count(f => f == SeparatorChar) + 1);
             }
 
@@ -207,15 +212,9 @@ namespace Emroy.Vfs.Service.Impl
                 var dir = FindSubDir(path, out string newPath);
                 return dir.TraverseSubdirs(newPath);
             }
-            lock (_entities)
-            {
-                var obj = _entities.FirstOrDefault(f => f.Name == path);
-                if (obj == null)
-                {
-                    throw new VfsException($"Object {path} does not exist!");
-                }
-                return obj;
-            }
+
+            return GetEntity(path,true);
+
         }
 
 
@@ -263,7 +262,7 @@ namespace Emroy.Vfs.Service.Impl
         /// /// </summary>
         /// <param name="path"></param>
         /// <returns>list of tuple [directory name, list of locking users] </returns>
-        //TODO: if users are performing commands, this method make take a while
+        //TODO: if multiple users are performing commands, this method make take a while
         public List<(string, List<string>)> GetContents(string path=null)
         {
             if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
@@ -303,34 +302,25 @@ namespace Emroy.Vfs.Service.Impl
                 return;
             }
 
-            lock (_entities)
+            var obj = GetEntity(path, true);
+  
+            if (obj is VfsFile file)
             {
-                var obj = _entities.FirstOrDefault(f => f.Name == path);
-                if (obj == null)
+
+                if (value)
                 {
-                    throw new VfsException($"Object {path} does not exist!");
-                }
-
-                if (obj is VfsFile file)
-                {
-
-                    if (value)
-                    {
-                        file.LockFile(label);
-                    }
-                    else
-                    {
-                        file.UnLockFile(label);
-                    }
-
+                    file.LockFile(label);
                 }
                 else
                 {
-                    throw new VfsException("Directory locking is not allowed!");
+                    file.UnLockFile(label);
                 }
 
             }
-
+            else
+            {
+                throw new VfsException("Directory locking is not allowed!");
+            }
 
 
         }
