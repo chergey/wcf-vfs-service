@@ -49,7 +49,7 @@ namespace Emroy.Vfs.Service.Impl
 
         public bool Contains(string name)
         {
-            return GetEntity(name,false);
+            return GetEntity(name, false) != null;
         }
 
         private VfsEntity GetEntity(string name, bool needThrow)
@@ -75,7 +75,7 @@ namespace Emroy.Vfs.Service.Impl
             }
             lock (_entities)
             {
-                AssertFileExists(path);
+                AssertExists(path);
 
                 var fileCreated = new VfsFile(path) { Parent = this };
                 _entities.Add(fileCreated);
@@ -95,44 +95,47 @@ namespace Emroy.Vfs.Service.Impl
             }
             lock (_entities)
             {
-                AssertDirExists(path);
+                AssertExists(path);
                 var dirCreated = new VfsDirectory(path) { Parent = this };
                 _entities.Add(dirCreated);
                 return dirCreated;
             }
         }
 
-
-
         public void DeleteSubDirectory(string path, bool canDeleteSubDir)
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                dir.DeleteSubDirectory(newPath, canDeleteSubDir);
+                var subdir = FindSubDir(path, out string newPath);
+                subdir.DeleteSubDirectory(newPath, canDeleteSubDir);
             }
             lock (_entities)
             {
-                var subdir = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
-                if (subdir == null)
+                var obj = GetEntity(path, true);
+
+                if (obj is VfsDirectory dir)
                 {
-                    throw new VfsException($"Directory {path} does not exist!");
-                }
-                if (!canDeleteSubDir)
-                {
-                    if (_entities.Any(f => f is VfsDirectory))
+
+                    if (!canDeleteSubDir)
                     {
-                        throw new VfsException($"Can't delete directory {path} as it contains subdirectories!");
+                        
+                        if (dir._entities.Any(f => f is VfsDirectory))
+                        {
+                            throw new VfsException($"Can't delete directory {path} as it contains subdirectories!");
+                        }
+
                     }
+
+                    dir.CheckRestrictionsLock();
+                    _entities.RemoveAll(f => f.Name == path);
+                }
+                else
+                {
+                     throw new VfsException($"Directory {path} correspond to file!!");
                 }
 
-                subdir.CheckRestrictionsLock();
-                _entities.RemoveAll(f => f.Name == path);
             }
         }
-
-
-
 
         public void DeleteFile(string path)
         {
@@ -149,8 +152,6 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-
-
         public void MoveEntity(string srcPath, string destPath)
         {
             if (srcPath.Contains(SeparatorChar))
@@ -161,11 +162,7 @@ namespace Emroy.Vfs.Service.Impl
             }
             lock (_entities)
             {
-                var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
-                if (obj == null)
-                {
-                    throw new VfsException($"Object {srcPath} does not exist!");
-                }
+                var obj = GetEntity(srcPath, true);
 
                 if (obj is VfsFile file && file.IsLocked())
                 {
@@ -209,8 +206,8 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                return dir.TraverseSubdirs(newPath);
+                var subdir = FindSubDir(path, out string newPath);
+                return subdir.TraverseSubdirs(newPath);
             }
 
             return GetEntity(path,true);
@@ -239,8 +236,8 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (depth > 0)
             {
-                var dir = FindSubDir(destPath, out string newPath, depth == 1 ? 0 : 1) as VfsDirectory;
-                dir.CopyEntity(entity, newPath, depth - 1);
+                var subdir = FindSubDir(destPath, out string newPath, depth == 1 ? 0 : 1) as VfsDirectory;
+                subdir.CopyEntity(entity, newPath, depth - 1);
                 return;
             }
             lock (_entities)
@@ -297,8 +294,8 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                dir.LockFile(newPath, label, value);
+                var subdir = FindSubDir(path, out string newPath);
+                subdir.LockFile(newPath, label, value);
                 return;
             }
 
@@ -327,39 +324,32 @@ namespace Emroy.Vfs.Service.Impl
 
         #region Assertions
 
-        private void AssertDirExists(string path)
-        {
-            if (_entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) != null)
-            {
-                throw new VfsException($"Directory {path} already exists!");
-            }
-        }
-
-
         /// <summary>
         /// Throws if file can't be deleted
         /// </summary>
         /// <param name="path"></param>
         private void AssertDeleteFile(string path)
         {
-            var file = _entities.FirstOrDefault(f => f is VfsFile && f.Name == path) as VfsFile;
+            var obj = GetEntity(path, true);
 
-            if (file == null)
+            if (obj is VfsFile file)
+            {
+                if (file.IsLocked())
+                {
+                    throw new VfsException($"Can't delete locked file {file.Path}!");
+                }
+            }else
             {
                 throw new VfsException($"File {path} does not exist!");
-            }
-            if (file.IsLocked())
-            {
-                throw new VfsException($"Can't delete locked file {file.Path}!");
             }
         }
 
 
-        private void AssertFileExists(string path)
+        private void AssertExists(string path)
         {
-            if (_entities.FirstOrDefault(f => f is VfsFile && f.Name == path) != null)
+            if (_entities.FirstOrDefault(f => f.Name == path) != null)
             {
-                throw new VfsException($"File {path} already exists!");
+                throw new VfsException($"Object {path} already exists!");
             }
         }
 

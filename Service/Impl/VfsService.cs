@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -42,15 +43,23 @@ namespace Emroy.Vfs.Service.Impl
 
         public static Logger AppLogger = LogManager.GetCurrentClassLogger();
 
-        [Conditional("DEBUG")]
+      
         public VfsService()
         {
-            //add logging
+            InitDebug();
+        }
+
+        /// <summary>
+        ///  add logging
+        /// </summary>
+        [Conditional("DEBUG")]
+        private static void InitDebug()
+        {
+          
             Aspect.Weave<Injector>(typeof(VfsService));
         }
 
 
-    
         public Response Connect(string userName)
         {
 
