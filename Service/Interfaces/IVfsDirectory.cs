@@ -20,8 +20,15 @@ namespace Emroy.Vfs.Service.Interfaces
         /// Copies file or directory
         /// </summary>
         /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
-        /// <param name="destPath">name or path (relative to the root) to the destination directory</param>
+        /// <param name="destPath">name or path (relative to the root) to the destination directory (empty ("") means current path)</param>
         void CopyEntity(string srcPath, string destPath);
+
+        /// <summary>
+        /// Moves file or directory
+        /// </summary>
+        /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
+        /// <param name="destPath">name or path (relative to the root) to the destination directory (empty ("") means current path) </param>
+        void MoveEntity(string srcPath, string destPath);
 
         /// <summary>
         /// Creates file
@@ -65,13 +72,6 @@ namespace Emroy.Vfs.Service.Interfaces
         /// <param name="path">name or path (relative to the root)</param>
         /// <param name="canDeleteSubDir"></param>
         void DeleteSubDirectory(string path, bool canDeleteSubDir);
-
-        /// <summary>
-        /// Moves file or directory
-        /// </summary>
-        /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
-        /// <param name="destPath">name or path (relative to the root) to the destination directory</param>
-        void MoveEntity(string srcPath, string destPath);
 
         /// <summary>
         /// Locks/unlocks file

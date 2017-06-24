@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,7 +23,26 @@ namespace Emroy.Vfs.Service.Impl
         public VfsDirectory Parent;
 
 
-   
+        /// <summary>
+        /// Creation date
+        /// </summary>
+        public DateTime DateCreated;
+
+        /// <summary>
+        /// Modification date
+        /// </summary>
+        public DateTime DateModified;
+
+        /// <summary>
+        /// Last access date
+        /// </summary>
+        public DateTime DateLastAccessed;
+
+
+        protected VfsEntity()
+        {
+            DateCreated = DateTime.Now;
+        }
 
         /// <summary>
         /// List of parents beginning with the highest

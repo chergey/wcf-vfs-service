@@ -86,13 +86,13 @@ namespace Emroy.Vfs.Tests
             ShouldThrow(() => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
                 "File got copied to a file! AAAA!!!");
 
-            ShouldThrow(() => _root.CopyEntity("dir1", "dir11\\dir23"), 
+            ShouldThrow(() => _root.CopyEntity("dir1", "dir11\\dir23"),
                 "Directory got copied twice! AAAAA!");
 
 
         }
 
-      
+
 
 
         [TestMethod]
@@ -100,16 +100,18 @@ namespace Emroy.Vfs.Tests
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateFile("file2.txt");
+            var dir2 = dir1.CreateSubDirectory("dir2");
+            dir2.CreateFile("file3.txt");
+            dir2.CreateSubDirectory("dir3");
 
-            var file1 = _root.CreateFile("file1.txt");
-            _root.CreateFile("file123.txt");
-            _root.CreateFile("file1234.txt");
-            _root.CreateFile("file12345.txt");
-            _root.CreateFile("file123456.txt");
-            _root.MoveEntity("file123456.txt", "dir1");
+            _root.CreateFile("file1.txt");
+            _root.MoveEntity(srcPath: "file1.txt", destPath: "dir1");
+            _root.MoveEntity(srcPath:"dir1\\dir2",destPath:"");
 
-   
-            Assert.IsFalse(_root.Contains("file123456.txt"));
+            Assert.IsFalse(_root.Contains("file1.txt"));
+            Assert.IsTrue(dir1.Contains("file1.txt"));
+            Assert.IsTrue(_root.Contains("dir2"));
+            Assert.IsFalse(dir1.Contains("dir2"));
 
         }
 
@@ -124,7 +126,7 @@ namespace Emroy.Vfs.Tests
 
         }
 
-        
+
         [TestMethod]
         public void TestDeleteWithSubdirectories()
         {
@@ -148,8 +150,8 @@ namespace Emroy.Vfs.Tests
             file1.LockFile("Antonio");
 
             ShouldThrow(() => _root.DeleteFile("file1.txt"), "Locked file got deleted! AAAA!");
-    
-          
+
+
 
         }
 
@@ -158,20 +160,20 @@ namespace Emroy.Vfs.Tests
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             var dir2 = dir1.CreateSubDirectory("dir2");
-             dir2.CreateFile("file3.txt");
+            dir2.CreateFile("file3.txt");
             _root.LockFile("dir1\\dir2\\file3.txt", "default", true);
             dir2.CreateSubDirectory("dir3");
             ShouldThrow(() => _root.DeleteSubDirectory("dir1", true), "Locked file got deleted! AAAA!!");
 
-           
+
 
         }
 
-     
+
         [TestCleanup]
         public void TearDown()
         {
-           _root.Clean();
+            _root.Clean();
 
         }
         public void ShouldThrow(Action action, string message)

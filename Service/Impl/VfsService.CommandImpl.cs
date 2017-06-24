@@ -40,7 +40,7 @@ namespace Emroy.Vfs.Service.Impl
 
             /// <summary>
             /// Get directory structure in the form:
-            /// C:
+            /// ROOT:
             /// DIR1
             ///   | DIR2
             ///   |  | file1.txt
@@ -58,7 +58,7 @@ namespace Emroy.Vfs.Service.Impl
                 + (s.Item2.Any() ? " [Locked by " + 
                 string.Join(",", s.Item2.Select(f => f == command.UserName ? "Me" : f)) + "]" : "") + "\n");
 
-                return "Disk structure:\nc:\n" + list;
+                return $"Disk structure:\n{VfsDirectory.DiskRoot}:\n" + list;
 
             }
 

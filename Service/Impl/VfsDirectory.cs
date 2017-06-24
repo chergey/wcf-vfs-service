@@ -45,6 +45,7 @@ namespace Emroy.Vfs.Service.Impl
         public VfsDirectory(string name)
         {
             Name = name;
+            
         }
 
         public bool Contains(string name)
@@ -79,6 +80,7 @@ namespace Emroy.Vfs.Service.Impl
 
                 var fileCreated = new VfsFile(path) { Parent = this };
                 _entities.Add(fileCreated);
+                DateModified = DateModified = DateLastAccessed = DateTime.Now;
 
                 return fileCreated;
             }
@@ -98,6 +100,7 @@ namespace Emroy.Vfs.Service.Impl
                 AssertExists(path);
                 var dirCreated = new VfsDirectory(path) { Parent = this };
                 _entities.Add(dirCreated);
+                DateModified = DateTime.Now;
                 return dirCreated;
             }
         }
@@ -115,10 +118,8 @@ namespace Emroy.Vfs.Service.Impl
 
                 if (obj is VfsDirectory dir)
                 {
-
                     if (!canDeleteSubDir)
                     {
-                        
                         if (dir._entities.Any(f => f is VfsDirectory))
                         {
                             throw new VfsException($"Can't delete directory {path} as it contains subdirectories!");
@@ -128,6 +129,7 @@ namespace Emroy.Vfs.Service.Impl
 
                     dir.CheckRestrictionsLock();
                     _entities.RemoveAll(f => f.Name == path);
+                    DateModified = DateTime.Now;
                 }
                 else
                 {
@@ -148,6 +150,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 AssertDeleteFile(path);
                 _entities.RemoveAll(f => f.Name == path);
+                DateModified = DateTime.Now;
             }
         }
 
@@ -157,7 +160,7 @@ namespace Emroy.Vfs.Service.Impl
             if (srcPath.Contains(SeparatorChar))
             {
                 var subdir = FindSubDir(srcPath, out string newPath);
-                subdir.CopyEntity(newPath, destPath);
+                subdir.MoveEntity(newPath, destPath);
                 return;
             }
             lock (_entities)
@@ -173,13 +176,14 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     directory.CheckRestrictionsLock();
                 }
-            
+
 
                 // destination
-                var skip = destPath.Count(f => f == SeparatorChar) + 1;
-                Root.CopyEntity(obj, destPath, skip);
+                var depth = GetDepth(destPath);
+                Root.CopyEntity(obj, destPath, depth);
 
                 _entities.RemoveAll(f => f.Name == srcPath);
+                DateModified = DateTime.Now;
             }
 
         }
@@ -197,9 +201,15 @@ namespace Emroy.Vfs.Service.Impl
             lock (_entities)
             {
                 var obj = GetEntity(srcPath, true);
-                Root.CopyEntity(obj, destPath, destPath.Count(f => f == SeparatorChar) + 1);
+                var depth = GetDepth(destPath);
+                Root.CopyEntity(obj, destPath, depth);
             }
 
+        }
+
+        private static int GetDepth(string destPath)
+        {
+            return destPath==string.Empty ? 0: destPath.Count(f => f == SeparatorChar) + 1;
         }
 
         public VfsEntity TraverseSubdirs(string path)
@@ -251,6 +261,7 @@ namespace Emroy.Vfs.Service.Impl
                 var obj = entity.Copy();
                 obj.Parent = this;
                 _entities.Add(obj);
+                DateModified = DateTime.Now;
             }
 
         }
@@ -312,6 +323,7 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     file.UnLockFile(label);
                 }
+                DateModified = DateTime.Now;
 
             }
             else
