@@ -87,10 +87,10 @@ namespace Emroy.Vfs.Tests
                 "dir1\\file1.txt", "dir1\\file12.txt", "dir1\\file123.txt",
                 "dir1\\file1234.txt", "dir1\\file12345.txt", "dir1\\file123456.txt"));
 
-            ShouldThrow(() => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
+            ShouldThrow( () => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
                 "File got copied to a file! AAAA!!!");
 
-            ShouldThrow(() => _root.CopyEntity("dir1", "dir11\\dir23"),
+            ShouldThrow( () => _root.CopyEntity("dir1", "dir11\\dir23"),
                 "Directory got copied twice! AAAAA!");
 
 

@@ -10,22 +10,17 @@ namespace Emroy.Vfs.Service.Interfaces
     public interface IVfsDirectory
     {
 
-
         /// <summary>
-        /// Returns true if current directory contains path with a givenfile or directory
+        /// Returns true if current directory contains specified files or directories
         /// </summary>
-        bool Contains(string path);
-
-        /// <summary>
-        /// Returns true if current directory contains all specified files or directories
-        /// </summary>
-        bool Contains(params string[] names);
+        bool Contains(params string[] paths);
 
         /// <summary>
         /// Copies file or directory
         /// </summary>
         /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
         /// <param name="destPath">name or path (relative to the root) to the destination directory (empty ("") means current path)</param>
+        /// <exception cref="VfsException">if can't copy entity</exception>
         void CopyEntity(string srcPath, string destPath);
 
         /// <summary>
@@ -33,31 +28,23 @@ namespace Emroy.Vfs.Service.Interfaces
         /// </summary>
         /// <param name="srcPath">name or path (relative to the root) of the source file or directory</param>
         /// <param name="destPath">name or path (relative to the root) to the destination directory (empty ("") means current path) </param>
+        /// <exception cref="VfsException">if can't move entity</exception>
         void MoveEntity(string srcPath, string destPath);
 
         /// <summary>
         /// Creates file
         /// </summary>
         /// <param name="path">name or path (relative to the root)</param>
+        /// <returns>created file</returns>
+        /// <exception cref="VfsException">if can't create file</exception>
         IVfsFile CreateFile(string path);
-
-
-        /// <summary>
-        /// Retrieves subdirectory in the current directory
-        /// </summary>
-        /// <param name="path">path of file or directory (relative to the current directory)</param>
-        /// <param name="newPath">path of file or directory (relative to the returned directory)</param>
-        /// <param name="skip"></param>
-        /// <returns></returns>
-        IVfsDirectory FindSubDir(string path, out string newPath, int skip = 1);
-
 
         /// <summary>
         /// Returns directory contents
-        /// </summary>
+        /// /// </summary>
         /// <param name="path"></param>
-        /// <returns>list of tuple directory name, list of locking users </returns>
-         List<(string, List<string>)> GetContents(string path);
+        /// <returns>list of tuple [directory name, list of locking users] </returns>
+        List<(string, List<string>)> GetContents(string path);
         /// <summary>
         /// Creates subdir
         /// </summary>
@@ -88,11 +75,11 @@ namespace Emroy.Vfs.Service.Interfaces
 
 
         /// <summary>
-        /// Goes all the way down subdirectories and throws if object is not found
+        /// Looks for file or directory
         /// </summary>
         /// <param name="path"></param>
-        /// <returns></returns>
-        VfsEntity TraverseSubdirs(string path);
+        /// <returns>found file or directory</returns>
+        VfsEntity FindEntity(string path);
 
         /// <summary>
         /// Delete all directories

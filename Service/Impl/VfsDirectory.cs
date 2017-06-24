@@ -48,7 +48,16 @@ namespace Emroy.Vfs.Service.Impl
 
         }
 
-        public bool Contains(string path)
+ 
+
+        public bool Contains(params string[] paths)
+        {
+            var foundItems = paths.ToList().Sum(path => Contains(path)  ? 1 : 0);
+            return foundItems == paths.Length;
+
+        }
+
+        private bool Contains(string path)
         {
             if (path.Contains(SeparatorChar))
             {
@@ -56,13 +65,6 @@ namespace Emroy.Vfs.Service.Impl
                 return subdir.Contains(newPath);
             }
             return GetEntity(path, false) != null;
-        }
-
-        public bool Contains(params string[] paths)
-        {
-            var foundItems = paths.ToList().Sum(path => Contains(path)  ? 1 : 0);
-            return foundItems == paths.Length;
-
         }
 
         private VfsEntity GetEntity(string name, bool needThrow)
@@ -224,12 +226,12 @@ namespace Emroy.Vfs.Service.Impl
             return destPath == string.Empty ? 0 : destPath.Count(f => f == SeparatorChar) + 1;
         }
 
-        public VfsEntity TraverseSubdirs(string path)
+        public VfsEntity FindEntity(string path)
         {
             if (path.Contains(SeparatorChar))
             {
                 var subdir = FindSubDir(path, out string newPath);
-                return subdir.TraverseSubdirs(newPath);
+                return subdir.FindEntity(newPath);
             }
 
             return GetEntity(path, true);
@@ -237,7 +239,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        public IVfsDirectory FindSubDir(string path, out string newPath, int skip = 1)
+        private IVfsDirectory FindSubDir(string path, out string newPath, int skip = 1)
         {
 
             var dirs = path.Split(SeparatorChar);
@@ -277,12 +279,8 @@ namespace Emroy.Vfs.Service.Impl
             }
 
         }
-        /// <summary>
-        /// Returns directory contents
-        /// /// </summary>
-        /// <param name="path"></param>
-        /// <returns>list of tuple [directory name, list of locking users] </returns>
-        //TODO: if multiple users are performing commands, this method make take a while
+
+        //TODO: if multiple users are performing commands, this method will wait for them to complete
         public List<(string, List<string>)> GetContents(string path = null)
         {
             if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
