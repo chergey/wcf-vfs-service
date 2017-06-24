@@ -59,11 +59,12 @@ namespace Emroy.Vfs.Tests
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateFile("file2.txt");
 
-            _root.CreateFile("file1.txt");
-            _root.CreateFile("file123.txt");
-            _root.CreateFile("file1234.txt");
-            _root.CreateFile("file12345.txt");
-            _root.CreateFile("file123456.txt");
+            dir1.CreateFile("file1.txt");
+            dir1.CreateFile("file12.txt");
+            dir1.CreateFile("file123.txt");
+            dir1.CreateFile("file1234.txt");
+            dir1.CreateFile("file12345.txt");
+            dir1.CreateFile("file123456.txt");
 
             _root.CreateFile("dir1\\file22.txt");
 
@@ -82,6 +83,9 @@ namespace Emroy.Vfs.Tests
 
             Assert.IsTrue(dir23.Contains("dir1"));
             Assert.IsTrue((dir23 as VfsEntity).Parent.Name == "dir11");
+            Assert.IsTrue(dir23.Contains(
+                "dir1\\file1.txt", "dir1\\file12.txt", "dir1\\file123.txt",
+                "dir1\\file1234.txt", "dir1\\file12345.txt", "dir1\\file123456.txt"));
 
             ShouldThrow(() => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
                 "File got copied to a file! AAAA!!!");
@@ -122,7 +126,7 @@ namespace Emroy.Vfs.Tests
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateSubDirectory("dir2");
             ShouldThrow(() => _root.DeleteSubDirectory("dir1", false),
-                "Directory with subdiretories got deleted! AAAA!!");
+                "Directory with subdirectories got deleted! AAAA!!");
 
         }
 

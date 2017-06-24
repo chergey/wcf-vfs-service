@@ -17,7 +17,7 @@ namespace Emroy.Vfs.Service.Impl
     public class VfsDirectory : VfsEntity, IVfsDirectory
     {
         #region VFS constants
-   
+
         /// <summary>
         /// VFS path separator
         /// </summary>
@@ -45,12 +45,24 @@ namespace Emroy.Vfs.Service.Impl
         public VfsDirectory(string name)
         {
             Name = name;
-            
+
         }
 
-        public bool Contains(string name)
+        public bool Contains(string path)
         {
-            return GetEntity(name, false) != null;
+            if (path.Contains(SeparatorChar))
+            {
+                var subdir = FindSubDir(path, out string newPath);
+                return subdir.Contains(newPath);
+            }
+            return GetEntity(path, false) != null;
+        }
+
+        public bool Contains(params string[] paths)
+        {
+            var foundItems = paths.ToList().Sum(path => Contains(path)  ? 1 : 0);
+            return foundItems == paths.Length;
+
         }
 
         private VfsEntity GetEntity(string name, bool needThrow)
@@ -133,7 +145,7 @@ namespace Emroy.Vfs.Service.Impl
                 }
                 else
                 {
-                     throw new VfsException($"Directory {path} correspond to file!!");
+                    throw new VfsException($"Directory {path} correspond to file!!");
                 }
 
             }
@@ -209,7 +221,7 @@ namespace Emroy.Vfs.Service.Impl
 
         private static int GetDepth(string destPath)
         {
-            return destPath==string.Empty ? 0: destPath.Count(f => f == SeparatorChar) + 1;
+            return destPath == string.Empty ? 0 : destPath.Count(f => f == SeparatorChar) + 1;
         }
 
         public VfsEntity TraverseSubdirs(string path)
@@ -220,7 +232,7 @@ namespace Emroy.Vfs.Service.Impl
                 return subdir.TraverseSubdirs(newPath);
             }
 
-            return GetEntity(path,true);
+            return GetEntity(path, true);
 
         }
 
@@ -271,7 +283,7 @@ namespace Emroy.Vfs.Service.Impl
         /// <param name="path"></param>
         /// <returns>list of tuple [directory name, list of locking users] </returns>
         //TODO: if multiple users are performing commands, this method make take a while
-        public List<(string, List<string>)> GetContents(string path=null)
+        public List<(string, List<string>)> GetContents(string path = null)
         {
             if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
             {
@@ -311,7 +323,7 @@ namespace Emroy.Vfs.Service.Impl
             }
 
             var obj = GetEntity(path, true);
-  
+
             if (obj is VfsFile file)
             {
 
@@ -350,7 +362,8 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     throw new VfsException($"Can't delete locked file {file.Path}!");
                 }
-            }else
+            }
+            else
             {
                 throw new VfsException($"File {path} does not exist!");
             }
@@ -407,7 +420,7 @@ namespace Emroy.Vfs.Service.Impl
 
         #endregion
 
-    
+
 
     }
 }

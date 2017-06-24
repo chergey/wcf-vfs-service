@@ -10,11 +10,16 @@ namespace Emroy.Vfs.Service.Interfaces
     public interface IVfsDirectory
     {
 
-     
+
         /// <summary>
-        /// Returns true if current directory contains file or directory with a given name
+        /// Returns true if current directory contains path with a givenfile or directory
         /// </summary>
-        bool Contains(string name);
+        bool Contains(string path);
+
+        /// <summary>
+        /// Returns true if current directory contains all specified files or directories
+        /// </summary>
+        bool Contains(params string[] names);
 
         /// <summary>
         /// Copies file or directory

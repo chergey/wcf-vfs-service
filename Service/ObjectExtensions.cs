@@ -89,7 +89,7 @@ namespace Emroy.Vfs.Service
     }
 
 
-    public static class ArrayExtensions
+     static class ArrayExtensions
     {
         public static void ForEach(this Array array, Action<Array, int[]> action)
         {
