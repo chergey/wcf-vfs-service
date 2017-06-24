@@ -87,7 +87,7 @@ namespace Emroy.Vfs.Tests
                 "File got copied to a file! AAAA!!!");
 
             ShouldThrow(() => _root.CopyEntity("dir1", "dir11\\dir23"), 
-                "Directory got copied twtice! AAAAA!");
+                "Directory got copied twice! AAAAA!");
 
 
         }
