@@ -35,6 +35,7 @@ namespace Emroy.Vfs.Service.Impl
 
         #endregion
 
+        private object _lockobj=new object();
 
         /// <summary>
         /// Parent directory for all items
@@ -50,8 +51,8 @@ namespace Emroy.Vfs.Service.Impl
 
         public bool Contains(string name)
         {
-            var dir = _entities.FirstOrDefault(f => f.Name == name);
-            return dir != null;
+            var entity = _entities.FirstOrDefault(f => f.Name == name);
+            return entity != null;
         }
 
 
@@ -59,15 +60,18 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                return dir.CreateFile(newPath);
+                var subdir = FindSubDir(path, out string newPath);
+                return subdir.CreateFile(newPath);
             }
+            lock (_entities)
+            {
+                AssertFileExists(path);
 
-            AssertFileExists(path);
-            var file = new VfsFile(path) { Parent = this };
-            _entities.Add(file);
+                var fileCreated = new VfsFile(path) { Parent = this };
+                _entities.Add(fileCreated);
 
-            return file;
+                return fileCreated;
+            }
         }
 
 
@@ -76,13 +80,16 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                return dir.CreateSubDirectory(newPath);
+                var subdir = FindSubDir(path, out string newPath);
+                return subdir.CreateSubDirectory(newPath);
             }
-            AssertDirExists(path);
-            var file = new VfsDirectory(path) { Parent = this };
-            _entities.Add(file);
-            return file;
+            lock (_entities)
+            {
+                AssertDirExists(path);
+                var dirCreated = new VfsDirectory(path) { Parent = this };
+                _entities.Add(dirCreated);
+                return dirCreated;
+            }
         }
 
 
@@ -94,20 +101,24 @@ namespace Emroy.Vfs.Service.Impl
                 var dir = FindSubDir(path, out string newPath);
                 dir.DeleteSubDirectory(newPath, canDeleteSubDir);
             }
-            var dir1 = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
-            if (dir1 == null)
+            lock (_entities)
             {
-                throw new VfsException($"Directory {path} does not exist!");
-            }
-            if (!canDeleteSubDir)
-            {
-                if (_entities.Any(f => f is VfsDirectory))
+                var dir1 = _entities.FirstOrDefault(f => f is VfsDirectory && f.Name == path) as VfsDirectory;
+                if (dir1 == null)
                 {
-                    throw new VfsException("Can't delete directories with subdirectories!");
+                    throw new VfsException($"Directory {path} does not exist!");
                 }
+                if (!canDeleteSubDir)
+                {
+                    if (_entities.Any(f => f is VfsDirectory))
+                    {
+                        throw new VfsException("Can't delete directories with subdirectories!");
+                    }
+                }
+
+                dir1.CheckRestrictionsLock();
+                _entities.RemoveAll(f => f.Name == path);
             }
-            dir1.CheckRestrictionsLock();
-            _entities.RemoveAll(f => f.Name == path);
         }
 
 
@@ -117,11 +128,14 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (path.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(path, out string newPath);
-                dir.DeleteFile(newPath);
+                var subdir = FindSubDir(path, out string newPath);
+                subdir.DeleteFile(newPath);
             }
-            AssertDeleteFile(path);
-            _entities.RemoveAll(f => f.Name == path);
+            lock (_entities)
+            {
+                AssertDeleteFile(path);
+                _entities.RemoveAll(f => f.Name == path);
+            }
         }
 
 
@@ -131,32 +145,35 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (srcPath.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(srcPath, out string newPath);
-                dir.CopyEntity(newPath, destPath);
+                var subdir = FindSubDir(srcPath, out string newPath);
+                subdir.CopyEntity(newPath, destPath);
                 return;
             }
-
-            var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
-            if (obj == null)
+            lock (_entities)
             {
-                throw new VfsException($"Object {srcPath} does not exist!");
+                var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
+                if (obj == null)
+                {
+                    throw new VfsException($"Object {srcPath} does not exist!");
+                }
+
+                if (obj is VfsFile file && file.IsLocked())
+                {
+                    throw new VfsException($"Can't move locked file {srcPath}!");
+                }
+
+                if (obj is VfsDirectory directory)
+                {
+                    directory.CheckRestrictionsLock();
+                }
+            
+
+                // destination
+                var skip = destPath.Count(f => f == SeparatorChar) + 1;
+                Root.CopyEntity(obj, destPath, skip);
+
+                _entities.RemoveAll(f => f.Name == srcPath);
             }
-
-            if (obj is VfsFile file && file.IsLocked())
-            {
-                throw new VfsException($"Can't move locked file {srcPath}!");
-            }
-
-            if (obj is VfsDirectory directory)
-            {
-                directory.CheckRestrictionsLock();
-            }
-
-            // destination
-            var skip = destPath.Count(f => f == SeparatorChar) + 1;
-            Root.CopyEntity(obj, destPath, skip);
-
-            _entities.RemoveAll(f => f.Name == srcPath);
 
         }
 
@@ -165,19 +182,21 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (srcPath.Contains(SeparatorChar))
             {
-                var dir = FindSubDir(srcPath, out string newPath);
-                dir.CopyEntity(newPath, destPath);
+                var subdir = FindSubDir(srcPath, out string newPath);
+                subdir.CopyEntity(newPath, destPath);
                 return;
             }
 
-            var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
-            if (obj == null)
+            lock (_entities)
             {
-                throw new VfsException($"Object {srcPath} does not exist!");
+                var obj = _entities.FirstOrDefault(f => f.Name == srcPath);
+                if (obj == null)
+                {
+                    throw new VfsException($"Object {srcPath} does not exist!");
+                }
+
+                Root.CopyEntity(obj, destPath, destPath.Count(f => f == SeparatorChar) + 1);
             }
-
-            Root.CopyEntity(obj, destPath, destPath.Count(f => f == SeparatorChar) + 1);
-
 
         }
 
@@ -188,12 +207,15 @@ namespace Emroy.Vfs.Service.Impl
                 var dir = FindSubDir(path, out string newPath);
                 return dir.TraverseSubdirs(newPath);
             }
-            var obj = _entities.FirstOrDefault(f => f.Name == path);
-            if (obj == null)
+            lock (_entities)
             {
-                throw new VfsException($"Object {path} does not exist!");
+                var obj = _entities.FirstOrDefault(f => f.Name == path);
+                if (obj == null)
+                {
+                    throw new VfsException($"Object {path} does not exist!");
+                }
+                return obj;
             }
-            return obj;
         }
 
 
@@ -222,22 +244,26 @@ namespace Emroy.Vfs.Service.Impl
                 dir.CopyEntity(entity, newPath, depth - 1);
                 return;
             }
-            var destObj = _entities.FirstOrDefault(f => f.Name == entity.Name);
-
-            if (destObj != null)
+            lock (_entities)
             {
-                throw new VfsException($"Object {entity.Name} already exists!");
+                var destObj = _entities.FirstOrDefault(f => f.Name == entity.Name);
+
+                if (destObj != null)
+                {
+                    throw new VfsException($"Object {entity.Name} already exists!");
+                }
+                var obj = entity.Copy();
+                obj.Parent = this;
+                _entities.Add(obj);
             }
-            var obj = entity.Copy();
-            obj.Parent = this;
-            _entities.Add(obj);
 
         }
         /// <summary>
         /// Returns directory contents
-        /// </summary>
+        /// /// </summary>
         /// <param name="path"></param>
         /// <returns>list of tuple [directory name, list of locking users] </returns>
+        //TODO: if users are performing commands, this method make take a while
         public List<(string, List<string>)> GetContents(string path=null)
         {
             if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
@@ -245,21 +271,25 @@ namespace Emroy.Vfs.Service.Impl
                 var dir = FindSubDir(path, out string newPath);
                 return dir.GetContents(newPath);
             }
-            var contents = new List<(string, List<string>)>();
 
-            contents.AddRange(_entities.Where(f => f is VfsFile)
-                    .Cast<VfsFile>()
-                    .OrderBy(f => f.Name)
-                    .Select(f => (f.Path, f.Locks))
-                    );
-
-            var dirs = _entities.OrderBy(f => f.Name).Where(f => f is VfsDirectory).Cast<VfsDirectory>();
-            foreach (var en in dirs)
+            lock (_entities)
             {
-                contents.Add((en.Path, new List<string>()));
-                contents.AddRange(en.GetContents(en.Name));
+                var contents = new List<(string, List<string>)>();
+
+                contents.AddRange(_entities.Where(f => f is VfsFile)
+                        .Cast<VfsFile>()
+                        .OrderBy(f => f.Name)
+                        .Select(f => (f.Path, f.Locks))
+                        );
+
+                var dirs = _entities.OrderBy(f => f.Name).Where(f => f is VfsDirectory).Cast<VfsDirectory>();
+                foreach (var en in dirs)
+                {
+                    contents.Add((en.Path, new List<string>()));
+                    contents.AddRange(en.GetContents(en.Name));
+                }
+                return contents;
             }
-            return contents;
         }
 
 
@@ -273,30 +303,33 @@ namespace Emroy.Vfs.Service.Impl
                 return;
             }
 
-            var obj = _entities.FirstOrDefault(f => f.Name == path);
-            if (obj == null)
+            lock (_entities)
             {
-                throw new VfsException($"Object {path} does not exist!");
-            }
-
-            if (obj is VfsFile file)
-            {
-
-                if (value)
+                var obj = _entities.FirstOrDefault(f => f.Name == path);
+                if (obj == null)
                 {
-                    file.LockFile(label);
+                    throw new VfsException($"Object {path} does not exist!");
+                }
+
+                if (obj is VfsFile file)
+                {
+
+                    if (value)
+                    {
+                        file.LockFile(label);
+                    }
+                    else
+                    {
+                        file.UnLockFile(label);
+                    }
+
                 }
                 else
                 {
-                    file.UnLockFile(label);
+                    throw new VfsException("Directory locking is not allowed!");
                 }
 
             }
-            else
-            {
-                throw new VfsException("Directory locking is not allowed!");
-            }
-
 
 
 

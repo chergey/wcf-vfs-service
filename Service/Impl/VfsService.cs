@@ -38,8 +38,6 @@ namespace Emroy.Vfs.Service.Impl
             };
 
 
-        private object _lockobj=new object();
-
         static readonly List<VfsUser> _users = new List<VfsUser>();
 
         public static Logger AppLogger = LogManager.GetCurrentClassLogger();
@@ -113,18 +111,16 @@ namespace Emroy.Vfs.Service.Impl
                 }
 
                 var resp = new Response();
-                lock (_lockobj)
+
+                try
                 {
-                    try
-                    {
-                        
-                        resp.Message = action(command);
-                    }
-                    catch (Exception ex)
-                    {
-                        resp.Message = ex.Message;
-                        resp.Fail = true;
-                    }
+                    
+                    resp.Message = action(command);
+                }
+                catch (Exception ex)
+                {
+                    resp.Message = ex.Message;
+                    resp.Fail = true;
                 }
                 lock (_users)
                 {
