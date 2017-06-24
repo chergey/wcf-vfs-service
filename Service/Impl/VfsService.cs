@@ -38,7 +38,7 @@ namespace Emroy.Vfs.Service.Impl
             };
 
 
-
+        private object _lockobj=new object();
 
         static readonly List<VfsUser> _users = new List<VfsUser>();
 
@@ -113,22 +113,28 @@ namespace Emroy.Vfs.Service.Impl
                 }
 
                 var resp = new Response();
-                try
+                lock (_lockobj)
                 {
-                    resp.Message = action(command);
+                    try
+                    {
+                        
+                        resp.Message = action(command);
+                    }
+                    catch (Exception ex)
+                    {
+                        resp.Message = ex.Message;
+                        resp.Fail = true;
+                    }
                 }
-                catch (Exception ex)
+                lock (_users)
                 {
-                    resp.Message = ex.Message;
-                    resp.Fail = true;
+                    _users.ToList()
+                        .ForEach(u =>
+                            u.Callback.Feedback(user.Name, $"User {user.Name} performs command:" +
+                                                        $" {command.Type} {string.Join(" ", command.Arguments)}"
+                            ));
+                    return resp;
                 }
-
-                _users.ToList()
-                    .ForEach(u =>
-                        u.Callback.Feedback(user.Name, $"User {user.Name} performs command:" +
-                                                       $" {command.Type} {string.Join(" ", command.Arguments)}"
-                        ));
-                return resp;
             }
 
             return new Response
