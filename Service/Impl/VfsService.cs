@@ -44,7 +44,7 @@ namespace Emroy.Vfs.Service.Impl
 
         public static Logger AppLogger = LogManager.GetCurrentClassLogger();
 
-
+        [Conditional("DEBUG")]
         public VfsService()
         {
             //add logging

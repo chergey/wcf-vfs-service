@@ -83,7 +83,7 @@ namespace Emroy.Vfs.Service.Interfaces
 
 
         /// <summary>
-        /// Goes all the way down subdirectories and throws if objet is not found
+        /// Goes all the way down subdirectories and throws if object is not found
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>

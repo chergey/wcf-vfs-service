@@ -7,7 +7,7 @@ using System.Reflection;
 namespace Emroy.Vfs.Service
 {
     /// <summary>
-    /// taken from https://github.com/Burtsev-Alexey/net-object-deep-copy
+    /// Taken from https://github.com/Burtsev-Alexey/net-object-deep-copy
     /// Reflection based implementaion of Deep Copy without serialization
     /// </summary>
     public static class ObjectExtensions
