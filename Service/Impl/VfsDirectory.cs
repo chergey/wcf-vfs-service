@@ -196,6 +196,7 @@ namespace Emroy.Vfs.Service.Impl
                 var depth = GetDepth(destPath);
                 Root.CopyEntity(obj, destPath, depth);
 
+                //get rid of all object
                 _entities.RemoveAll(f => f.Name == srcPath);
                 DateModified = DateTime.Now;
             }
@@ -218,6 +219,8 @@ namespace Emroy.Vfs.Service.Impl
                 var depth = GetDepth(destPath);
                 Root.CopyEntity(obj, destPath, depth);
             }
+            DateLastAccessed=DateTime.Now;
+
 
         }
 
@@ -245,7 +248,8 @@ namespace Emroy.Vfs.Service.Impl
             var dirs = path.Split(SeparatorChar);
             var dir = _entities.FirstOrDefault(f => f.Name == dirs[0]);
             AssertDirIsNullOrIsFile(dirs[0], dir);
-            newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) => cur + Separator + s).Substring(VfsDirectory.Separator.Length);
+            newPath = dirs.Skip(skip).Aggregate(string.Empty, (cur, s) =>
+                cur + Separator + s).Substring(Separator.Length);
             return dir as IVfsDirectory;
 
 
@@ -253,9 +257,6 @@ namespace Emroy.Vfs.Service.Impl
         /// <summary>
         /// Copies file or directory 
         /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="destPath"></param>
-        /// <param name="depth"></param>
         private void CopyEntity(VfsEntity entity, string destPath, int depth)
         {
             if (depth > 0)
@@ -272,9 +273,9 @@ namespace Emroy.Vfs.Service.Impl
                 {
                     throw new VfsException($"Object {entity.Name} already exists!");
                 }
-                var obj = entity.Copy();
-                obj.Parent = this;
-                _entities.Add(obj);
+                var copiedObj= entity.Copy();
+                copiedObj.Parent = this;
+                _entities.Add(copiedObj);
                 DateModified = DateTime.Now;
             }
 
@@ -320,9 +321,9 @@ namespace Emroy.Vfs.Service.Impl
                 return;
             }
 
-            var obj = GetEntity(path, true);
+            var fileToLock = GetEntity(path, true);
 
-            if (obj is VfsFile file)
+            if (fileToLock is VfsFile file)
             {
 
                 if (value)
@@ -352,9 +353,9 @@ namespace Emroy.Vfs.Service.Impl
         /// <param name="path"></param>
         private void AssertDeleteFile(string path)
         {
-            var obj = GetEntity(path, true);
+            var supposedFile = GetEntity(path, true);
 
-            if (obj is VfsFile file)
+            if (supposedFile is VfsFile file)
             {
                 if (file.IsLocked())
                 {
@@ -367,16 +368,20 @@ namespace Emroy.Vfs.Service.Impl
             }
         }
 
-
-        private void AssertExists(string path)
+        /// <summary>
+        /// Throws if file or directory does not exist in path
+        /// </summary>
+        private void AssertExists(string name)
         {
-            if (_entities.FirstOrDefault(f => f.Name == path) != null)
+            if (_entities.FirstOrDefault(f => f.Name == name) != null)
             {
-                throw new VfsException($"Object {path} already exists!");
+                throw new VfsException($"Object {name} already exists!");
             }
         }
 
-
+        /// <summary>
+        /// Throws if entity is not directory or does not exist
+        /// </summary>
         private static void AssertDirIsNullOrIsFile(string path, VfsEntity entity)
         {
             if (entity == null)
