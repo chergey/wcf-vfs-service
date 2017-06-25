@@ -1,8 +1,10 @@
 # Lightweight Virtual File System implementation
 
-## What used
+- To build project you need [Visual Studio 2017](https://www.visualstudio.com/vs/whatsnew/)
+
+## What is used
 - C# 7 (pattern matching, tuples)
-- AOP (NConern and CNepture libs)
+- AOP logging (NConern and CNepture libs)
 - WCF 
 - MSTest
 
@@ -20,7 +22,7 @@
 
 
 ## Found bugs
-- Debugging does not work correctly (Step Into, member variables don't show in Locals and Autos windows) when adding CNeptune to references (which is necessary to make it work with NConcern) - bug is hiding in Mono.Cecil
+- Debugging does not work correctly (Step Into, member variables don't show in Locals and Autos windows) when adding CNeptune to references (which is necessary to make project work with NConcern) - [bug is hiding in Mono.Cecil](https://github.com/Virtuoze/CNeptune/issues/11)
 
 ## Misc
 - VfsFile has a public constructor (which is bad), can be remedied by making VfsDirectory implemening IVfsFile but then will have to store type of entity a a file in VfsEntity
