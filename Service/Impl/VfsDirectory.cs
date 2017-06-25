@@ -351,9 +351,8 @@ namespace Emroy.Vfs.Service.Impl
         #region Assertions
 
         /// <summary>
-        /// Throws if file can't be deleted
+        /// Throws VfsException if file can't be deleted
         /// </summary>
-        /// <param name="path"></param>
         private void AssertDeleteFile(string path)
         {
             var supposedFile = GetEntity(path, true);
@@ -372,7 +371,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
         /// <summary>
-        /// Throws if file or directory does not exist in path
+        /// Throws VfsException if file or directory does not exist in path
         /// </summary>
         private void AssertExists(string name)
         {
@@ -383,7 +382,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
         /// <summary>
-        /// Throws if entity is not directory or does not exist
+        /// Throws VfsException if entity is not directory or does not exist
         /// </summary>
         private static void AssertDirIsNullOrIsFile(string path, VfsEntity entity)
         {
@@ -400,14 +399,14 @@ namespace Emroy.Vfs.Service.Impl
 
 
         /// <summary>
-        /// Throws if directory contains locked files
+        /// Throws VfsException if current directory contains locked files
         /// </summary>
         private void CheckRestrictionsLock()
         {
             var locks = _entities.Where(f => f is VfsFile).Cast<VfsFile>().Where(f => f.Locks.Any());
             if (locks.Any())
             {
-                throw new VfsException("Can't move or delete directories with locked files!");
+                throw new VfsException($"Can't move or delete directory {Name} as it contains locked files!");
             }
             var dirs = _entities.Where(f => f is VfsDirectory).Cast<VfsDirectory>().Where(f => f._entities.Any());
 
