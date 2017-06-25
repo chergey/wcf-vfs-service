@@ -13,7 +13,8 @@ namespace Emroy.Vfs.Service.Impl
     /// </summary>
     public class VfsFile : VfsEntity, IVfsFile
     {
-        public VfsFile(string name, VfsDirectory parent) : base(name, parent)
+        public VfsFile(string name, VfsDirectory parent, string userName=null) 
+            : base(name, parent, userName)
         {
         }
 

@@ -35,9 +35,10 @@ namespace Emroy.Vfs.Service.Interfaces
         /// Creates file
         /// </summary>
         /// <param name="path">name or path (relative to the root)</param>
+        /// <param name="userName">name of user who is creating file</param>
         /// <returns>created file</returns>
         /// <exception cref="VfsException">if can't create file</exception>
-        IVfsFile CreateFile(string path);
+        IVfsFile CreateFile(string path, string userName);
 
         /// <summary>
         /// Returns directory contents
@@ -49,13 +50,15 @@ namespace Emroy.Vfs.Service.Interfaces
         /// Creates subdir
         /// </summary>
         /// <param name="path">name or path (relative to the root)</param>
+        /// <param name="userName">name of user who is creating directory</param>
         /// <returns></returns>
-        IVfsDirectory CreateSubDirectory(string path);
+        IVfsDirectory CreateSubDirectory(string path, string userName);
 
         /// <summary>
         /// Deletes file
         /// </summary>
         /// <param name="path">name or path (relative to the root)</param>
+        /// <exception cref="VfsException">if can't delete file</exception>
         void DeleteFile(string path);
 
         /// <summary>
@@ -63,6 +66,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// </summary>
         /// <param name="path">name or path (relative to the root)</param>
         /// <param name="canDeleteSubDir"></param>
+        /// <exception cref="VfsException">if can't delete subdirectory(contains subdirectories or locked files or does not exist)</exception>
         void DeleteSubDirectory(string path, bool canDeleteSubDir);
 
         /// <summary>
@@ -71,6 +75,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// <param name="path">name or path (relative to the root) of the target file</param>
         /// <param name="label">user name to mark the file</param>
         /// <param name="value">true - lock, false - unlock </param>
+        /// <exception cref="VfsException">if attempting to lock twice or unlock not locked file</exception>
         void LockFile(string path, string label, bool value);
 
 
@@ -82,7 +87,7 @@ namespace Emroy.Vfs.Service.Interfaces
         VfsEntity FindEntity(string path);
 
         /// <summary>
-        /// Delete all directories
+        /// Delete all directories (for testing purposes)
         /// </summary>
          void Clean();
     }

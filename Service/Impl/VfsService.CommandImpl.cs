@@ -26,7 +26,7 @@ namespace Emroy.Vfs.Service.Impl
                 ValidateArguments(command.Arguments, 1);
                 var path = GetDir(command);
 
-                VfsDirectory.Root.CreateSubDirectory(path);
+                VfsDirectory.Root.CreateSubDirectory(path,  command.UserName);
                 return $"Directory { AddLabel(path)} created!";
             }
 
@@ -34,7 +34,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 ValidateArguments(command.Arguments, 1);
                 var path = GetDir(command);
-                VfsDirectory.Root.CreateFile(path);
+                VfsDirectory.Root.CreateFile(path, command.UserName);
                 return $"File { AddLabel(path)} created!";
             }
 
@@ -147,8 +147,6 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Adds root directory to the path
             /// </summary>
-            /// <param name="str"></param>
-            /// <returns></returns>
             public static string AddLabel(string str)
             {
                 return VfsDirectory.DiskRoot + VfsDirectory.Separator + str;
@@ -158,7 +156,6 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Returns current user directory
             /// </summary>
-            /// <param name="userName">user name</param>
             public static string GetCurDir(string userName)
             {
                 string dir;
@@ -172,7 +169,6 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Returns directory in which command is to be performed
             /// </summary>
-            /// <param name="command"></param>
             private static string GetDir(VfsCommand command)
             {
                 // if full path
@@ -193,12 +189,9 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Returns two directories in which command (such as MOVE or COPY) is to be performed
             /// </summary>
-            /// <param name="command"></param>
-            /// <param name="srcDir"></param>
-            /// <param name="destDir"></param>
             private static void GetDir(VfsCommand command, out string srcDir, out string destDir)
             {
-                // if full path
+                // if supplied full path
                 if (command.Arguments[0].StartsWith(VfsDirectory.DiskRoot + VfsDirectory.Separator) ||
                     command.Arguments[1].StartsWith(VfsDirectory.DiskRoot + VfsDirectory.Separator))
                 {
@@ -222,7 +215,6 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Throws if trying to move/delete current directory
             /// </summary>
-            /// <param name="command"></param>
             private static void AssertCurDir(VfsCommand command)
             {
                 if (GetCurDir(command.UserName) == command.Arguments[0])
@@ -234,8 +226,6 @@ namespace Emroy.Vfs.Service.Impl
             /// <summary>
             /// Throws if number arguments doesn't match
             /// </summary>
-            /// <param name="commandArguments"></param>
-            /// <param name="count"></param>
 
             private void ValidateArguments(string[] commandArguments, int count)
             {

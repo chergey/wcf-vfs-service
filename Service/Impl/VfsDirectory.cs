@@ -36,13 +36,14 @@ namespace Emroy.Vfs.Service.Impl
         #endregion
 
         /// <summary>
-        /// Parent directory for all items
+        /// Parent directory for all entities
         /// </summary>
         public static VfsDirectory Root = new VfsDirectory(DiskRoot, null);
 
         private readonly List<VfsEntity> _entities = new List<VfsEntity>();
 
-        protected VfsDirectory(string name, VfsDirectory parent) : base(name, parent)
+        protected VfsDirectory(string name, VfsDirectory parent, string userName=null) 
+            : base(name, parent, userName)
         {
         }
 
@@ -83,18 +84,18 @@ namespace Emroy.Vfs.Service.Impl
         }
 
 
-        public IVfsFile CreateFile(string path)
+        public IVfsFile CreateFile(string path, string userName)
         {
             if (path.Contains(SeparatorChar))
             {
                 var subdir = FindSubDir(path, out string newPath);
-                return subdir.CreateFile(newPath);
+                return subdir.CreateFile(newPath, userName);
             }
             lock (_entities)
             {
                 AssertExists(path);
 
-                var fileCreated = new VfsFile(path, this);
+                var fileCreated = new VfsFile(path, this, userName);
                 _entities.Add(fileCreated);
                 DateModified = DateModified = DateLastAccessed = DateTime.Now;
 
@@ -104,17 +105,17 @@ namespace Emroy.Vfs.Service.Impl
 
 
 
-        public IVfsDirectory CreateSubDirectory(string path)
+        public IVfsDirectory CreateSubDirectory(string path, string userName)
         {
             if (path.Contains(SeparatorChar))
             {
                 var subdir = FindSubDir(path, out string newPath);
-                return subdir.CreateSubDirectory(newPath);
+                return subdir.CreateSubDirectory(newPath, userName);
             }
             lock (_entities)
             {
                 AssertExists(path);
-                var dirCreated = new VfsDirectory(path, this);
+                var dirCreated = new VfsDirectory(path, this, userName);
                 _entities.Add(dirCreated);
                 DateModified = DateTime.Now;
                 return dirCreated;

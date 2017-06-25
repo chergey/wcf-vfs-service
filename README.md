@@ -1,14 +1,19 @@
-# Краткое описание
-- Client - консольный клиент, через ChannelFactory<T>
-- Service - WCF-сервис с реализованной ВФС
-- WinService - windows-служба
-- СonsoleHost - консольный хост
-- Tests - тесты для ВФС (не для сервиса)
+# Description
+- Client - console client, через ChannelFactory<T>
+- Service - WCF-service
+- WinService - windows service
+- СonsoleHost - console host
+- Tests - Vfs storage tests
 
-#Использование
-- Работа в ФВС проиcходит относительно корневой директории Root (=c:), т.е. Root.DeleteFile("directory\subdirectory\file.txt"). При таком подходе, правда, теряется полный путь в исключениях (когда делаем рекурсивный обход директории)
-- Можно также найти нужную директорию использую метод TraverseSubdirs и вызывать DeleteFile (dir=TraverseSubdirs(...), dir.DeleteFile("file.txt")
+# API
+- Vfs operations are performed in Root directory (default = c:), e.g., Root.DeleteFile("directory\subdirectory\file1.txt"). With this approach, however, we don't remmember full path when throwing expceptions
+- Can also find neeed directory using FindEntity, then call appropriate method (e.g. dir=FindEntity("directory\subdirectory"); dir.DeleteFile("file1.txt"))
 
 
-# Замеченные баги
-- Некорретно работает отладка из-за ссылки на CNeptune (ссылка в инспектируемом проекте на него необходима для работы NConcern) - не работает Step Into, переменные члены класса не отображаются в Autos и Locals
+# Found bugs
+- Debugging does not work correctly (Step Into, member variables don't show in Locals and Autos windows) when adding CNeptune to references (which is necessary to make it work with NConcern) - bug is hiding in Mono.Cecil
+
+# Misc
+- VfsFile has a public constructor (which is bad), can be remedied by making VfsDirectory implemening IVfsFile but then will have to store type of entity a a file in VfsEntity
+
+

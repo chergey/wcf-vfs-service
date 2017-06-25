@@ -38,12 +38,17 @@ namespace Emroy.Vfs.Service.Impl
         /// </summary>
         public DateTime DateLastAccessed;
 
+        public String UserNameCreated;
 
-        protected VfsEntity(String name, VfsDirectory parent)
+        public string UserNameModified;
+
+
+        protected VfsEntity(String name, VfsDirectory parent, string userName=null)
         {
             Name = name;
             Parent=parent;
             DateCreated = DateTime.Now;
+            UserNameCreated=userName;
         }
 
         /// <summary>
