@@ -24,7 +24,7 @@ namespace Emroy.Vfs.Service.Impl
         public const string Separator = "\\";
 
         /// <summary>
-        /// the same as char
+        /// the same as previous, only as a char
         /// </summary>
         public static char SeparatorChar => Separator.ToCharArray()[0];
 
@@ -42,13 +42,11 @@ namespace Emroy.Vfs.Service.Impl
 
         private readonly List<VfsEntity> _entities = new List<VfsEntity>();
 
-        public VfsDirectory(string name)
+        protected VfsDirectory(string name)
         {
             Name = name;
 
         }
-
- 
 
         public bool Contains(params string[] paths)
         {
@@ -414,15 +412,12 @@ namespace Emroy.Vfs.Service.Impl
             }
         }
 
+         #endregion
+
         public void Clean()
         {
             _entities.Clear();
         }
-
-
-
-        #endregion
-
 
 
     }

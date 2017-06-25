@@ -56,7 +56,7 @@ namespace Emroy.Vfs.Service.Impl
         private static void InitDebug()
         {
           
-            //Aspect.Weave<Injector>(typeof(VfsService));
+            Aspect.Weave<Injector>(typeof(VfsService));
         }
 
 
