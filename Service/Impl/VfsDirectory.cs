@@ -38,14 +38,12 @@ namespace Emroy.Vfs.Service.Impl
         /// <summary>
         /// Parent directory for all items
         /// </summary>
-        public static VfsDirectory Root = new VfsDirectory(DiskRoot);
+        public static VfsDirectory Root = new VfsDirectory(DiskRoot, null);
 
         private readonly List<VfsEntity> _entities = new List<VfsEntity>();
 
-        protected VfsDirectory(string name)
+        protected VfsDirectory(string name, VfsDirectory parent) : base(name, parent)
         {
-            Name = name;
-
         }
 
         public bool Contains(params string[] paths)
@@ -65,6 +63,12 @@ namespace Emroy.Vfs.Service.Impl
             return GetEntity(path, false) != null;
         }
 
+        /// <summary>
+        /// Finds entity in current directory 
+        /// </summary>
+        /// <param name="name">name of entity</param>
+        /// <param name="needThrow">if true, throw VfsException if entity is not found </param>
+        /// <returns>found entity (or null if entity is not found and needThrow = false)</returns>
         private VfsEntity GetEntity(string name, bool needThrow)
         {
             lock (_entities)
@@ -90,7 +94,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 AssertExists(path);
 
-                var fileCreated = new VfsFile(path) { Parent = this };
+                var fileCreated = new VfsFile(path, this);
                 _entities.Add(fileCreated);
                 DateModified = DateModified = DateLastAccessed = DateTime.Now;
 
@@ -110,7 +114,7 @@ namespace Emroy.Vfs.Service.Impl
             lock (_entities)
             {
                 AssertExists(path);
-                var dirCreated = new VfsDirectory(path) { Parent = this };
+                var dirCreated = new VfsDirectory(path, this);
                 _entities.Add(dirCreated);
                 DateModified = DateTime.Now;
                 return dirCreated;
@@ -254,6 +258,7 @@ namespace Emroy.Vfs.Service.Impl
         }
         /// <summary>
         /// Copies file or directory 
+        ///<param name="depth">destination path depth</param>
         /// </summary>
         private void CopyEntity(VfsEntity entity, string destPath, int depth)
         {

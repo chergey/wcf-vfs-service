@@ -39,8 +39,10 @@ namespace Emroy.Vfs.Service.Impl
         public DateTime DateLastAccessed;
 
 
-        protected VfsEntity()
+        protected VfsEntity(String name, VfsDirectory parent)
         {
+            Name = name;
+            Parent=parent;
             DateCreated = DateTime.Now;
         }
 

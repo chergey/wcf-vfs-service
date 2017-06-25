@@ -13,9 +13,8 @@ namespace Emroy.Vfs.Service.Impl
     /// </summary>
     public class VfsFile : VfsEntity, IVfsFile
     {
-        public VfsFile(string name)
+        public VfsFile(string name, VfsDirectory parent) : base(name, parent)
         {
-            Name = name;
         }
 
         private readonly List<string> _locks = new List<string>();
