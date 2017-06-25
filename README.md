@@ -1,9 +1,11 @@
 # Lightweight Virtual File System implementation
 
-## Frameworks used
+## What used
+- C# 7 (pattern matching, tuples)
 - AOP (NConern and CNepture libs)
 - WCF 
 - MSTest
+
 
 ## Description
 - Client - console client via ChannelFactory<T>
