@@ -7,6 +7,7 @@ using System.Linq;
 using Emroy.Vfs.Service.Dto;
 using Emroy.Vfs.Service.Enums;
 using Emroy.Vfs.Service.Interfaces;
+using Service;
 
 namespace Emroy.Vfs.Service.Impl
 {
@@ -38,7 +39,7 @@ namespace Emroy.Vfs.Service.Impl
         /// <summary>
         /// Parent directory for all entities
         /// </summary>
-        public static VfsDirectory Root = new VfsDirectory(DiskRoot, null);
+        public static IVfsDirectory Root = new VfsDirectory(DiskRoot, null);
 
         private readonly List<VfsEntity> _entities = new List<VfsEntity>();
 
@@ -77,7 +78,8 @@ namespace Emroy.Vfs.Service.Impl
                 var entity = _entities.FirstOrDefault(f => f.Name == name);
                 if (needThrow && entity == null)
                 {
-                    throw new VfsException($"Object {name} does not exist!");
+                    throw new VfsException(VfsExceptionType.ObjNotExists,
+                    $"Object {name} does not exist!");
                 }
                 return entity;
             }
@@ -139,7 +141,7 @@ namespace Emroy.Vfs.Service.Impl
                     {
                         if (dir._entities.Any(f => f is VfsDirectory))
                         {
-                            throw new VfsException($"Can't delete directory {path} as it contains subdirectories!");
+                            throw new VfsException(VfsExceptionType.DirContainsSubdirs, $"Can't delete directory {path} as it contains subdirectories!");
                         }
 
                     }
@@ -150,7 +152,7 @@ namespace Emroy.Vfs.Service.Impl
                 }
                 else
                 {
-                    throw new VfsException($"Directory {path} correspond to file!!");
+                    throw new VfsException(VfsExceptionType.DirCorrespondToFile,$"Directory {path} correspond to file!!");
                 }
 
             }
@@ -186,7 +188,7 @@ namespace Emroy.Vfs.Service.Impl
 
                 if (obj is VfsFile file && file.IsLocked())
                 {
-                    throw new VfsException($"Can't move locked file {srcPath}!");
+                    throw new VfsException(VfsExceptionType.CantMoveLockedFile,$"Can't move locked file {srcPath}!");
                 }
 
                 if (obj is VfsDirectory directory)
@@ -197,7 +199,7 @@ namespace Emroy.Vfs.Service.Impl
 
                 // destination
                 var depth = GetDepth(destPath);
-                Root.CopyEntity(obj, destPath, depth);
+               (Root as VfsDirectory).CopyEntity(obj, destPath, depth);
 
                 //get rid of all object
                 _entities.RemoveAll(f => f.Name == srcPath);
@@ -220,7 +222,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 var obj = GetEntity(srcPath, true);
                 var depth = GetDepth(destPath);
-                Root.CopyEntity(obj, destPath, depth);
+                (Root as VfsDirectory).CopyEntity(obj, destPath, depth);
             }
             DateLastAccessed=DateTime.Now;
 
@@ -275,7 +277,7 @@ namespace Emroy.Vfs.Service.Impl
 
                 if (destObj != null)
                 {
-                    throw new VfsException($"Object {entity.Name} already exists!");
+                    throw new VfsException(VfsExceptionType.ObjAlreadyExists,$"Object {entity.Name} already exists!");
                 }
                 var copiedObj= entity.Copy();
                 copiedObj.Parent = this;
@@ -343,7 +345,7 @@ namespace Emroy.Vfs.Service.Impl
             }
             else
             {
-                throw new VfsException("Directory locking is not allowed!");
+                throw new VfsException(VfsExceptionType.CantLockDir,"Directory locking is not allowed!");
             }
 
 
@@ -362,12 +364,12 @@ namespace Emroy.Vfs.Service.Impl
             {
                 if (file.IsLocked())
                 {
-                    throw new VfsException($"Can't delete locked file {file.Path}!");
+                    throw new VfsException(VfsExceptionType.CantDeleteLockedFile,$"Can't delete locked file {file.Path}!");
                 }
             }
             else
             {
-                throw new VfsException($"File {path} does not exist!");
+                throw new VfsException(VfsExceptionType.VfsFileNotExists, $"File {path} does not exist!");
             }
         }
 
@@ -378,7 +380,7 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (_entities.FirstOrDefault(f => f.Name == name) != null)
             {
-                throw new VfsException($"Object {name} already exists!");
+                throw new VfsException(VfsExceptionType.ObjAlreadyExists,$"Object {name} already exists!");
             }
         }
 
@@ -389,11 +391,11 @@ namespace Emroy.Vfs.Service.Impl
         {
             if (entity == null)
             {
-                throw new VfsException($"Directory {path} does not exist!");
+                throw new VfsException(VfsExceptionType.VfsDirNotExists,$"Directory {path} does not exist!");
             }
             if (entity is VfsFile)
             {
-                throw new VfsException($"Directory {entity.Path} corresponds to a file!");
+                throw new VfsException(VfsExceptionType.DirCorrespondToFile,$"Directory {entity.Path} corresponds to a file!");
             }
         }
 
@@ -407,7 +409,7 @@ namespace Emroy.Vfs.Service.Impl
             var locks = _entities.Where(f => f is VfsFile).Cast<VfsFile>().Where(f => f.Locks.Any());
             if (locks.Any())
             {
-                throw new VfsException($"Can't move or delete directory {Name} as it contains locked files!");
+                throw new VfsException(VfsExceptionType.DirContainLockedFiles,$"Can't move or delete directory {Name} as it contains locked files!");
             }
             var dirs = _entities.Where(f => f is VfsDirectory).Cast<VfsDirectory>().Where(f => f._entities.Any());
 

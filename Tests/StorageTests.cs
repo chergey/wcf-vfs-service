@@ -6,14 +6,16 @@ using System.Threading.Tasks;
 using Emroy.Vfs.Service;
 using Emroy.Vfs.Service.Enums;
 using Emroy.Vfs.Service.Impl;
+using Emroy.Vfs.Service.Interfaces;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Service;
 
 namespace Emroy.Vfs.Tests
 {
     [TestClass]
     public class StorageTests
     {
-        readonly VfsDirectory _root = VfsDirectory.Root;
+        readonly IVfsDirectory _root = VfsDirectory.Root;
 
         [TestInitialize]
         public void SetUp()
@@ -88,10 +90,11 @@ namespace Emroy.Vfs.Tests
                 "dir1\\file1234.txt", "dir1\\file12345.txt", "dir1\\file123456.txt"));
 
             ShouldThrow( () => _root.CopyEntity("dir1\\file22.txt", "dir12\\dir22\\file31.txt"),
-                "File got copied to a file! AAAA!!!");
+                "File got copied to a file! AAAA!!!", 
+                VfsExceptionType.ObjAlreadyExists, VfsExceptionType.DirCorrespondToFile);
 
             ShouldThrow( () => _root.CopyEntity("dir1", "dir11\\dir23"),
-                "Directory got copied twice! AAAAA!");
+                "Directory got copied twice! AAAAA!", VfsExceptionType.ObjAlreadyExists);
 
 
         }
@@ -126,7 +129,7 @@ namespace Emroy.Vfs.Tests
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateSubDirectory("dir2");
             ShouldThrow(() => _root.DeleteSubDirectory("dir1", false),
-                "Directory with subdirectories got deleted! AAAA!!");
+                "Directory with subdirectories got deleted! AAAA!!", VfsExceptionType.DirContainsSubdirs);
 
         }
 
@@ -153,7 +156,8 @@ namespace Emroy.Vfs.Tests
             _root.CreateFile("file123456.txt");
             file1.LockFile("Antonio");
 
-            ShouldThrow(() => _root.DeleteFile("file1.txt"), "Locked file got deleted! AAAA!");
+            ShouldThrow(() => _root.DeleteFile("file1.txt"), "Locked file got deleted! AAAA!",
+                VfsExceptionType.CantDeleteLockedFile);
 
 
 
@@ -167,7 +171,8 @@ namespace Emroy.Vfs.Tests
             dir2.CreateFile("file3.txt");
             _root.LockFile("dir1\\dir2\\file3.txt", "default", true);
             dir2.CreateSubDirectory("dir3");
-            ShouldThrow(() => _root.DeleteSubDirectory("dir1", true), "Locked file got deleted! AAAA!!");
+            ShouldThrow(() => _root.DeleteSubDirectory("dir1", true), 
+             "Directory with locked files got deleted! AAAA!!", VfsExceptionType.DirContainLockedFiles);
 
 
 
@@ -180,14 +185,24 @@ namespace Emroy.Vfs.Tests
             _root.Clean();
 
         }
-        public void ShouldThrow(Action action, string message)
+        public void ShouldThrow(Action action, string message, params VfsExceptionType[] expectedExceptions)
         {
+            if (expectedExceptions.Length==0)
+            {
+                throw new ArgumentException("expectedExceptions.Length should be > 0!");
+            }
             try
             {
                 action();
                 Assert.Fail(message);
             }
-            catch (VfsException) { }
+            catch (VfsException ex) { 
+                if (!expectedExceptions.Contains(ex.ExType))
+                {
+                    Assert.Fail($"Expected exceptions are: {expectedExceptions.ToList()}, got {ex.ExType}");
+                }
+
+            }
         }
     }
 }

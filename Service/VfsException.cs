@@ -1,16 +1,15 @@
 ﻿using System;
+using Service;
 
 namespace Emroy.Vfs.Service
 {
     public class VfsException : Exception
     {
-        public VfsException()
-        {
+        public VfsExceptionType ExType;
 
-        }
-
-        public VfsException(string message) : base(message)
+        public VfsException(VfsExceptionType type, string message ) : base(message)
         {
+            ExType=type;
         }
     }
 }

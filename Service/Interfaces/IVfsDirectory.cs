@@ -38,7 +38,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// <param name="userName">name of user who is creating file</param>
         /// <returns>created file</returns>
         /// <exception cref="VfsException">if can't create file</exception>
-        IVfsFile CreateFile(string path, string userName);
+        IVfsFile CreateFile(string path, string userName="default");
 
         /// <summary>
         /// Returns directory contents
@@ -52,7 +52,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// <param name="path">name or path (relative to the root)</param>
         /// <param name="userName">name of user who is creating directory</param>
         /// <returns></returns>
-        IVfsDirectory CreateSubDirectory(string path, string userName);
+        IVfsDirectory CreateSubDirectory(string path, string userName="default");
 
         /// <summary>
         /// Deletes file
