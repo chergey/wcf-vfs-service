@@ -45,7 +45,7 @@ namespace Emroy.Vfs.Service.Interfaces
         /// /// </summary>
         /// <param name="path"></param>
         /// <returns>list of tuple [directory name, list of locking users] </returns>
-        List<(string, List<string>)> GetContents(string path);
+        List<(string, List<string>)> GetContents(string path=null);
         /// <summary>
         /// Creates subdir
         /// </summary>

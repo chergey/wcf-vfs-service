@@ -288,7 +288,7 @@ namespace Emroy.Vfs.Service.Impl
         }
 
         //TODO: if multiple users are performing commands, this method will wait for them to complete
-        public List<(string, List<string>)> GetContents(string path = null)
+        public List<(string, List<string>)> GetContents(string path)
         {
             if (!string.IsNullOrEmpty(path) && path.Contains(SeparatorChar))
             {

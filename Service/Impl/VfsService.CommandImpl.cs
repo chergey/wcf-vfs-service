@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Emroy.Vfs.Service.Dto;
+using Service;
 
 namespace Emroy.Vfs.Service.Impl
 {
@@ -219,7 +221,8 @@ namespace Emroy.Vfs.Service.Impl
             {
                 if (GetCurDir(command.UserName) == command.Arguments[0])
                 {
-                    throw new VfsException("Deleting/moving current directory is not allowed!");
+                    throw new VfsException(VfsExceptionType.MovingDeletingCurDirIsNotAllowed, 
+                        "Deleting/moving current directory is not allowed!");
                 }
             }
 
@@ -231,7 +234,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 if (commandArguments.Length != count)
                 {
-                    throw new VfsException($"Wrong number of arguments: expected {count}, got {commandArguments.Length}");
+                    throw new ArgumentException($"Wrong number of arguments: expected {count}, got {commandArguments.Length}");
                 }
             }
 

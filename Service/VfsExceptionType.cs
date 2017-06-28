@@ -14,7 +14,12 @@ namespace Service
         CantMoveLockedFile,
         CantDeleteLockedFile,
         CantMoveDeleteLockedFile,
-        CantLockDir
+        CantLockDir,
+        FileIsAlreadyLocked,
+        FileIsNotLocked,
+        WrongNumberOfArguments,
+        MovingDeletingCurDirIsNotAllowed
+
 
     }
 }

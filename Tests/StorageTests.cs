@@ -56,7 +56,7 @@ namespace Emroy.Vfs.Tests
 
 
         [TestMethod]
-        public void TestCopyDirectory()
+        public void TestCopyDirectoryAndFiles()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateFile("file2.txt");
@@ -103,7 +103,7 @@ namespace Emroy.Vfs.Tests
 
 
         [TestMethod]
-        public void TestMove()
+        public void TestMoveFileAndDirectory()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateFile("file2.txt");
@@ -124,7 +124,7 @@ namespace Emroy.Vfs.Tests
 
 
         [TestMethod]
-        public void TestDelete()
+        public void TestDeleteDirectoryWithSubdirectories()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateSubDirectory("dir2");
@@ -144,7 +144,7 @@ namespace Emroy.Vfs.Tests
 
         }
         [TestMethod]
-        public void TestLockedFile()
+        public void TestDeleteLockedFile()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             dir1.CreateFile("file2.txt");
@@ -164,7 +164,7 @@ namespace Emroy.Vfs.Tests
         }
 
         [TestMethod]
-        public void TestLockedFileInDirectory()
+        public void TestDeleteLockedFileInDirectory()
         {
             var dir1 = _root.CreateSubDirectory("dir1");
             var dir2 = dir1.CreateSubDirectory("dir2");

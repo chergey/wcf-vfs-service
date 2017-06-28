@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Emroy.Vfs.Service.Enums;
 using Emroy.Vfs.Service.Interfaces;
+using Service;
 
 namespace Emroy.Vfs.Service.Impl
 {
@@ -47,7 +48,8 @@ namespace Emroy.Vfs.Service.Impl
             {
                 if (_locks.Contains(label))
                 {
-                    throw new VfsException($"File {Name} is already locked by {label}!");
+                    throw new VfsException(VfsExceptionType.FileIsAlreadyLocked, 
+                        $"File {Name} is already locked by {label}!");
                 }
                 _locks.Add(label);
                 DateModified = DateTime.Now;
@@ -60,7 +62,7 @@ namespace Emroy.Vfs.Service.Impl
             {
                 if (!_locks.Contains(label))
                 {
-                    throw new VfsException($"File {Name} is not locked!");
+                    throw new VfsException(VfsExceptionType.FileIsNotLocked, $"File {Name} is not locked!");
                 }
                 _locks.Remove(label);
                 DateModified = DateTime.Now;
